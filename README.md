@@ -9,8 +9,9 @@
 
 ## Documents
 
-- **24/02/2025** *_quarto.yml* En-tête YAML pour tous les documents Quarto
-- **24/02/2025** *entete.tex* Réglages $\LaTeX$ pour tous les documents Quarto (si sortie en pdf)
-- **24/02/2025** *plan_analyse.qmd* Plan d'analyse statistique (incomplet) en Quarto
-- **24/02/2025** *stat.bib* Bibliographie en $\BibTeX$
-- **24/02/2025** *listacro.tex* Liste des acronymes en \$LaTeX$ (package `glossaries-extra`)
+### 24/02/2025
+-  *_quarto.yml* En-tête YAML pour tous les documents Quarto
+-  *entete.tex* Réglages $\LaTeX$ pour tous les documents Quarto (si sortie en pdf)
+-  *plan_analyse.qmd* Plan d'analyse statistique (incomplet) en Quarto
+-  *stat.bib* Bibliographie en $Bib\TeX$
+-  *listacro.tex* Liste des acronymes en \$LaTeX$ (package `glossaries-extra`)
