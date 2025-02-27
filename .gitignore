@@ -35,9 +35,11 @@ po/*~
 rsconnect/
 /.quarto/
 *.pdf
-*.tex
 *.g*
 *.ist
 _ext*
 FACE-Q.Rproj
 QTDublinIrish.otf
+generique.tex
+plan_analyse.tex
+Doc

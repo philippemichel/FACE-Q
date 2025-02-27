@@ -1,11 +1,19 @@
 ---
 subtitle: "Plan d'analyse statistique"
+toc: false
+lof: false
+lot: false
+echo: false
 ---
 
 ```{r info}
 rm(list=ls())
 library("baseph")
 library("tidyverse")
+library("FactoMineR")
+library("factoextra")
+library("palmerpenguins")
+
 # sessionInfo()
 ```
 
@@ -13,59 +21,96 @@ library("tidyverse")
 
 Le risque $\alpha$ retenu sera de 0,05 & la puissance de 0,8.
 
-Vu le faible nombre de cas on ne fera pas d'hypothèse de normalité. Les variables numériques seront présentées par leur médiane avec les quartiles & comparées grâce au test non paramétrique de Wilcoxon. Les variables discrètes seront présentés en nombre avec le pourcentage. L'intervalle de confiance (à 95 %) sera calculé par bootstrap (package `boot` [@boot]). Le test du $\chi^2$ de Spearman sera utilisé sous réserve d'un effectif suffisant, à défaut le test exact de Fischer. Des graphiques seront réalisés pour les résultats importants (package `ggplot2` [@ggplot]).
+
+Les items du score FACE-Q sont des échelles de Likert à 4 niveau. IL s'agit donc de variables discrètes ordonnées qui seront traitées comme des valeurs numériques mais pour lesquelles aucune hypothèse de normalité n'a du sens. On utilisera donc des tests non paramétriques : test des rang de Wilcoxon pour mles comparaisons deux à deux ou test de corrélation de Kendall. 
+Les variables discrètes seront présentés en nombre avec le pourcentage. L'intervalle de confiance (à 95 %) sera calculé par bootstrap (package `boot` [@boot]). Le test du $\chi^2$ de Spearman sera utilisé sous réserve d'un effectif suffisant, à défaut le test exact de Fischer. Des graphiques seront réalisés pour les résultats importants (package `ggplot2` [@ggplot]).
+
+Dans tout le document pour l'échelle FACE-Q on utilisera les termes : 
+
+- **Item** pour les réponses simples à une question. 
+- **Échelle** pour les regroupements d'items. Par exemple, l'échelle *apparence générale du visage* regroupe dix items.
+- **Score** pour les trois regroupements globaux d'items, à savoir *apparence* (4 échelles), *Qualité de vie liée à la santé* (4 échelles) & *Effets indésirables* (2 échelles).
 
 
 
 ## Taille de l'échantillon
 
 
-Il s'agit d'une étude observationnelle simple pour lesquelles il est difficile de préciser un nombre de cas nécessaires en l'absence de test statistique. Néanmoins on peut estimer à environ quarante cas le strict minimum nécessaire pour avoir un échantillon utilisable s'il n'y a pas trop de données manquantes. 
+Pour une précision de 10%, un IC bilatéral de 95%, un coefficient $\alpha$ de Cronbach estimé à 80% et un nombre d’items compris entre 10 et 80 alors il faut inclure au plus 138 patients dans l’étude. Une majoration de 20% pour données incomplètes conduit à un effectif de 173 patients. Sur la base d’un taux de réponse estimé de 50%, il sera nécessaire de contacter 346 patients éligibles.
+Un groupe témoin de même effectif que le groupe de patients (soit 173 individus), sera inclus. Il sera apparié au groupe de patients en fréquence sur l’âge et le sexe. Ce groupe permettra d’estimer la satisfaction liée à l’apparence et la qualité de vie dans un groupe de sujets indemnes de chirurgie cutanée du visage. 
 
 ## Données manquantes
 
-Le décompte des données manquantes sera réalisé & présenté par un tableau ou un graphique. Les variables comportant trop de données manquantes ou non utilisables ne seront pas prises en compte après validation par le promoteur. Les cas où la réhospitalisation de l’enfant (critère principal) n'est pas noté seront exclus. 
+Le décompte des données manquantes sera réalisé & présenté par un tableau ou un graphique. Les variables (hors échelle FACE-Q) comportant trop de données manquantes ou non utilisables ne seront pas prises en compte après validation par le promoteur. 
 
-Après ce premier tri une imputation des données manquantes (package `missMDA` [@miss]) sera réalisée uniquement pour l'analyse factorielle & pour la recherche du meilleur modèle par step-by-tep descendant pour les analyses par régression (logistique ou linéaire). Néanmoins pour cette analyse, après choix du modèle, le calcul final sera fait avec les données réelles. 
+Les résultats seront donnés bruts par item. Pour les échelles & les scores globaux le nombre de questionnaires comportant des données manquantes sera indiqué.
+
 
 # Description de la population
 
-## Analyse simple
+La population (données démographiques & cliniques) sera présentée dans un tableau comparant le groupe traité & le groupe témoin afin de s'assurer qu'il n'y a pas de différence gênante.
 
-
-
-Une analyse de corrélation (package `corr` [@corr]) entre les variables sera réalisée & présentée sur un graphique de corrélation. Si certaines variables se montrent anormalement corrélées elles devront être exclues de l'étude après accord du promoteur.
-
-Un tableau présentera les résultats du questionnaire *médecin*.
-
-## Analyse factorielle
-
-Si le nombre de cas recueillis le permet une analyse factorielle en MCA (Analyse de correspondances multiples -- package `FactoMineR` [@facto]) sera réalisée.
-
-Cette analyse ne pourra être réalisée qu'après transformation des variables numériques en catégories & imputation des données manquantes ce qui n'est possible que si ces dernières ne sont pas trop nombreuses.
 
 # Objectif principal
 
+*Validation psychométrique du questionnaire FACE-Q adapté à la reconstruction
+(Questionnaire Nasal Reconstruction FACE-Q)*
 
-Une analyse simple sera réalisée pour rechercher d'éventuels facteurs pronostics en utilisant les données médicales (terme, poids à la naissance\dots)
+## Acceptabilité
+
+L'acceptabilité sera jugée sur la qualité du remplissage en particulier le nombre de données manquantes. 
+
+## Fiabilité de la version francophone des échelles du Nasal Reconstruction FACE-Q
+
+### Test-Retest
+
+La reproductibilité sera évaluée par des tests de corrélation réalisés pour les échelles du score FACE-Q entre les questionnaires remplis au moment de l'inclusion & ceux remplis sept jours plus tard. Les différences échelle par échelle seront présentées par des diagrammes de Bland & Altman.
+
+### Cohérence interne
+
+La cohérence interne sera étudiée à l’aide du coefficient  $\alpha$ de Cronbach (package `psych` [@psych]).
+
+## Validité du construit évaluée à l’aide de tests de corrélation
+
+Pour chacune des trois échelles une étude en corrélation multiples entre les items seront réalisées par \gls{pca} (packages `FactoMineR` [@facto] & `factoextra` [@factoextra]). Idéalement, vu la construction du score,  tous les items devraient être sur des axes proches & dans la même direction. Ce calcul ne peut être fait qu'après imputation des données manquantes, calcul qui n'est fiable que si celles-ci sont rares.
+
+```{r}
+#| label: pca
+#| eval: false
+penguins |> ric)) |> 
+    dplyr::select(where(is.numeric))
+  PCA(graph = FALSE) |> 
+  fviz_pca_var()
+```
 
 
-## Analyse par régression
+## Sensibilité au changement
 
-Un modèle de régression logistique multinomiale sera employé (package `VGAM` [@vgam]). Ce modèle de régression permettra d’explorer les facteurs associés à la réponse en utilisant les critères ayant une réponse significative avec un seuil de la p.value \< 0,2 lors de l'étape précédente. Une recherche du meilleur modèle sera réalisée par un step-by-step descendant évaluée par le critère d’information d’Akaike. Cette étape sera réalisée après imputation des données manquantes mais le résultat final sera calculé sur les données vraies. 
+
+
+## Calcul de la Différence Cliniquement Significative 
+
+ la Différence Minimum Cliniquement Intéressante (DMCI) sera approchée pour chaque échelle par la méthode basée sur la distribution aux seuils de \num{0.3} & \num{0.5} fois l'écart-type de la différence patient/témoin (le seuil usuel étant de \num{0.5}). Ce seuil est sensé représenter les variations liées au hasard des réponses. Une différence entre le groupe témoin & le groupe traité supérieure à ce seuil aurait donc une signification clinique en tout cas non expliquée par le hasard. Il s'agit donc d'un calcul statistique dont la signification clinique réelle peut être discutable. 
+ 
+ En l'absence de critère extérieur fiable la méthode d'ancrage n'est pas utilisable.
+ 
+
+##Corrélation avec le score de qualité de vie globale liée à la santé SF-36
+
+Les corrélations entre les trois échelles du score FACE-Q & les les deux scores composites du SF36 (mental & physique) seront calculées. 
+
+
+
 
 # Objectifs secondaires
 
 ## Objectif 1
 
+*Évaluation de la satisfaction fonctionnelle post-opératoire obtenues grâce au questionnaire NOSE qui permet de mesurer l’importance de la gêne respiratoire nasale.*
 
-## Objectif 2
+Le questionnaire NOSE est un score calculé sur sur 5 items (échelles de Likert) avec un résultat de 0 à 20. 
 
-
-## Objectif 3
-
-
-## Objectif 4
+Les résultats de ce questionnaire seront présentés. Les corrélations seront ensuite calculées entre le score NOSE  & chacune des échelles du score FACE-Q.
 
 
 
