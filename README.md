@@ -14,4 +14,4 @@
 -  *entete.tex* Réglages $\LaTeX$ pour tous les documents Quarto (si sortie en pdf)
 -  *plan_analyse.qmd* Plan d'analyse statistique (pré-version non validée) en Quarto
 -  *stat.bib* Bibliographie en $Bib\TeX$
--  *listacro.tex* Liste des acronymes en \$LaTeX$ (package `glossaries-extra`)
+-  *listacro.tex* Liste des acronymes en $\LaTeX$ (package `glossaries-extra`)

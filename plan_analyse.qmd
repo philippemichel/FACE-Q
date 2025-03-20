@@ -1,6 +1,6 @@
 ---
-subtitle: "Plan d'analyse statistique V0.1"
-toc: false
+subtitle: "Plan d'analyse statistique V0.2"
+toc: true
 lof: false
 lot: false
 echo: false
@@ -15,10 +15,18 @@ library("tidyverse")
 library("FactoMineR")
 library("factoextra")
 library("kableExtra")
-library("palmerpenguins")
+library("missMDA")
 library("ggsci")
+#
+patients <- patients |> 
+  mutate(across(where(is.character), ~ as.factor(.x))) 
 
-# sessionInfo()
+# nn <- estim_ncpFAMD(patients)
+# nn <- nn$ncp
+nn <- 2
+patients <- imputeFAMD(patients, ncp = nn, method = "Regularized")
+patients <- patients$completeObs
+patients <- as_tibble(patients)
 ```
 
 # Généralités
@@ -26,6 +34,8 @@ library("ggsci")
 Le risque $\alpha$ retenu sera de \num{0.05} & la puissance de \num{0.8}.
 
 Les variables discrètes seront présentés en nombre avec le pourcentage. L'intervalle de confiance (à 95 %) sera calculé par bootstrap (package `boot` [@boot]). Le test du $\chi^2$ de Spearman sera utilisé sous réserve d'un effectif suffisant, à défaut le test exact de Fischer. Des graphiques seront réalisés pour les résultats importants (package `ggplot2` [@ggplot]).
+
+Tous les exemples présentés dans ce document (graphiques, tableaux\dots) sont sur données fictives.
 
 ## FACE-Q
 
@@ -72,10 +82,27 @@ Sinon les données manquantes seront imputées (imputations multiples, 150 itér
 
 Les résultats seront donnés bruts par item. Pour le score \gls{faceq} le nombre de données manquantes sera présenté par échelle. Pour mémoire, les [promoteurs du score](https://qportfolio.org/face-q/) ne donnent pas de directives pour la gestion des données manquantes.
 
+## Corrélations
+
+Un calcul des corrélations entre toutes les variables (hors scores) sera réalisé & présenté sous forme de graphique (figure @fig-cor). Si certaines données présentent des corrélation très fortes, attendues ou non, elle pourront être exclues de l'étude après accord du promoteur.
+
+```{r}
+#| label: fig-cor
+#| fig-cap: Corrélations 
+
+zz <- patients |>
+  mutate(across(is.character, as.factor)) |> 
+  mutate(across(is.factor, as.numeric)) |> 
+  cor(use = "complete.obs") |> 
+  corrplot::corrplot(type = "lower", diag = FALSE)
+
+```
+
+
 
 # Description de la population
 
-La population (données démographiques & cliniques) sera présentée dans un tableau comparant le groupe traité *&* le groupe témoin afin de s'assurer qu'il n'y a pas de différence gênante. La qualité de l'appariement sur l'âge & le sexe sera vérifiée. 
+La population (données démographiques & cliniques) sera présentée dans un tableau comparant le groupe traité & le groupe témoin afin de s'assurer qu'il n'y a pas de différence gênante. La qualité de l'appariement sur l'âge & le sexe sera vérifiée. 
 
 
 # Objectif principal
@@ -139,21 +166,23 @@ tibble(a1,a2,dif) |>
 
 ### Cohérence interne
 
-La cohérence interne sera étudiée à l’aide du coefficient  $\alpha$ de Cronbach (package `psych` [@psych]). Un $\alpha$ supérieur à \num{0.6} sera considéré comme satisfaisant.
+La cohérence interne sera étudiée à l’aide du coefficient  $\alpha$ de Cronbach (package `psych` [@psych]). Un $\alpha$ supérieur à \num{0.7} sera considéré comme satisfaisant.
 
 ## Validité du construit évaluée à l’aide de tests de corrélation
 
-Pour chacune des trois échelles une étude en corrélation multiples entre les items seront réalisées par \gls{pca} (packages `FactoMineR` [@facto] & `factoextra` [@factoextra]) --- figure @fig-pca . Idéalement, vu la construction du score,  tous les items devraient être sur des axes proches & dans des directions proches.
+Des test de corrélations deux à deux seront réalisés entre tous les items & présentés en graphique (figure @fig-cor). SI certains items semblent avoir des réponses *aberrantes* (corrélations très faibles, corrélations négatives \dots) ils seront signalés au promoteur.
+
+Pour chacune des trois échelles une étude en corrélation multiples entre les items seront réalisées par \gls{pca} (packages `FactoMineR` [@facto] & `factoextra` [@factoextra]) --- figure @fig-pca . Idéalement, vu la construction du score,  tous les items devraient être sur des axes & des directions proches.
 
 ```{r}
 #| label: fig-pca
 #| fig-cap: corrélation multiples
 
 
-penguins |> 
+patients |> 
     dplyr::select(where(is.numeric)) |> 
   PCA(graph = FALSE) |> 
-  fviz_pca_var()
+  fviz_pca_var(repel = TRUE)
 ```
 
 
@@ -176,11 +205,11 @@ Les corrélations entre les trois échelles du score \gls{faceq} & les les deux 
 
 ## Objectif 1
 
-*Évaluation de la satisfaction fonctionnelle post-opératoire obtenues grâce au questionnaire NOSE qui permet de mesurer l’importance de la gêne respiratoire nasale.*
+*Évaluation de la satisfaction fonctionnelle post-opératoire obtenues grâce au questionnaire \textsc{nose} qui permet de mesurer l’importance de la gêne respiratoire nasale.*
 
-Le questionnaire NOSE est un score calculé sur sur 5 items (échelles de Likert) avec un résultat de 0 à 100. Seuls seront pris en compte les scores complets en accord avec les promoteurs du score @lipan13.
+Le questionnaire \textsc{nose} est un score calculé sur sur 5 items (échelles de Likert) avec un résultat de 0 à 100. Seuls seront pris en compte les scores complets en accord avec les promoteurs du score (@lipan13).
 
-Les résultats de ce questionnaire seront présentés. Les corrélations seront ensuite calculées entre le score NOSE  & chacune des échelles du score \gls{faceq}.
+Les résultats de ce questionnaire seront présentés. Les corrélations seront ensuite calculées entre le score \textsc{nose}  & chacune des échelles du score \gls{faceq}.
 
 
 
