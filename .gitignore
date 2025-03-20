@@ -43,3 +43,10 @@ QTDublinIrish.otf
 generique.tex
 plan_analyse.tex
 Doc
+plan_analyse_files
+plan_analyse.html
+plan_analyse.fdb_latexmk
+README.tex
+README_files
+README.log
+README.aux

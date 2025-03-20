@@ -1,60 +1,87 @@
 ---
-subtitle: "Plan d'analyse statistique"
+subtitle: "Plan d'analyse statistique V0.1"
 toc: false
 lof: false
 lot: false
 echo: false
 ---
 
-```{r info}
+```{r}
+#| label: setup
+
 rm(list=ls())
 library("baseph")
 library("tidyverse")
 library("FactoMineR")
 library("factoextra")
+library("kableExtra")
 library("palmerpenguins")
+library("ggsci")
 
 # sessionInfo()
 ```
 
 # Généralités
 
-Le risque $\alpha$ retenu sera de 0,05 & la puissance de 0,8.
+Le risque $\alpha$ retenu sera de \num{0.05} & la puissance de \num{0.8}.
 
-
-Les items du score FACE-Q sont des échelles de Likert à 4 niveau. IL s'agit donc de variables discrètes ordonnées qui seront traitées comme des valeurs numériques mais pour lesquelles aucune hypothèse de normalité n'a du sens. On utilisera donc des tests non paramétriques : test des rang de Wilcoxon pour mles comparaisons deux à deux ou test de corrélation de Kendall. 
 Les variables discrètes seront présentés en nombre avec le pourcentage. L'intervalle de confiance (à 95 %) sera calculé par bootstrap (package `boot` [@boot]). Le test du $\chi^2$ de Spearman sera utilisé sous réserve d'un effectif suffisant, à défaut le test exact de Fischer. Des graphiques seront réalisés pour les résultats importants (package `ggplot2` [@ggplot]).
 
-Dans tout le document pour l'échelle FACE-Q on utilisera les termes : 
+## FACE-Q
+
+Le score utilisé & désigné dans tout le document comme \gls{faceq} est une sélection d'échelles du score total \gls{faceq} (possibilité prévue par les [concepteurs du score](https://qportfolio.org/face-q/)) traduit en Français.
+
+Les items du score \gls{faceq} sont des échelles de Likert à 4 niveaux. IL s'agit donc de variables discrètes ordonnées qui seront traitées comme des valeurs numériques avec un nombre de valeurs possibles limité donc pour lesquelles aucune hypothèse de normalité n'a du sens. On utilisera des tests non paramétriques : test des rang de Wilcoxon pour les comparaisons deux à deux ou test de corrélation de Kendall. 
+
+Dans tout le document pour l'échelle \gls{faceq} on utilisera les termes : 
 
 - **Item** pour les réponses simples à une question. 
 - **Échelle** pour les regroupements d'items. Par exemple, l'échelle *apparence générale du visage* regroupe dix items.
 - **Score** pour les trois regroupements globaux d'items, à savoir *apparence* (4 échelles), *Qualité de vie liée à la santé* (4 échelles) & *Effets indésirables* (2 échelles).
 
+### Score numériques
+
+Un score sera calculé pour chaque échelle par addition des différents items puis converti afin d'obtenir un score total allant de 0 à 100 en utilisant les tables fournies par le promoteur (voir @tab-convert).
+
+```{r}
+#| label: tbl-convert1
+#| tbl-cap: Table de conversion Apparence
+
+nom <- c("apparence générale du visage ", "nez", "narines", "peau")
+score_max_brut <- c(10, 10, 5, 12)*4
+coef <- c(1, 2, 2, 3)
+tibble(nom, score_max_brut, coef) |> 
+  mutate(score_max_final = score_max_brut*coef) |>
+  kbl(booktabs = T) |> 
+  kable_styling(latex_options = c("striped")) |> 
+  footnote(general = "Données fictives")
+```
 
 
 ## Taille de l'échantillon
 
+Pour une précision de 10%, un intervalle de confiance bilatéral de 95%, un coefficient $\alpha$ de Cronbach estimé à 80% & un nombre d’items compris entre 10 et 80 alors il faut inclure au moins 138 patients dans l’étude. Une majoration de 20% pour données incomplètes conduit à un effectif de 173 patients. Sur la base d’un taux de réponse estimé de 50%, il sera nécessaire de contacter 346 patients éligibles.
 
-Pour une précision de 10%, un IC bilatéral de 95%, un coefficient $\alpha$ de Cronbach estimé à 80% et un nombre d’items compris entre 10 et 80 alors il faut inclure au plus 138 patients dans l’étude. Une majoration de 20% pour données incomplètes conduit à un effectif de 173 patients. Sur la base d’un taux de réponse estimé de 50%, il sera nécessaire de contacter 346 patients éligibles.
 Un groupe témoin de même effectif que le groupe de patients (soit 173 individus), sera inclus. Il sera apparié au groupe de patients en fréquence sur l’âge et le sexe. Ce groupe permettra d’estimer la satisfaction liée à l’apparence et la qualité de vie dans un groupe de sujets indemnes de chirurgie cutanée du visage. 
 
 ## Données manquantes
 
-Le décompte des données manquantes sera réalisé & présenté par un tableau ou un graphique. Les variables (hors échelle FACE-Q) comportant trop de données manquantes ou non utilisables ne seront pas prises en compte après validation par le promoteur. 
+Le décompte des données manquantes sera réalisé & présenté par un tableau ou un graphique. Les variables (hors échelle \gls{faceq}) comportant trop de données manquantes ou non utilisables (> 40%) ne seront pas prises en compte après validation par le promoteur.
 
-Les résultats seront donnés bruts par item. Pour les échelles & les scores globaux le nombre de questionnaires comportant des données manquantes sera indiqué.
+Sinon les données manquantes seront imputées (imputations multiples, 150 itérations au maximum --- package `missmDA`[@miss]) si considérées comme manquant de manière complètement aléatoire (`MCAR`) ou manquant de manière aléatoire (`MAR`). Les données manquantes non aléatoires (`MNAR`) ne seront  imputées qu'après avis du promoteur.
+
+Les résultats seront donnés bruts par item. Pour le score \gls{faceq} le nombre de données manquantes sera présenté par échelle. Pour mémoire, les [promoteurs du score](https://qportfolio.org/face-q/) ne donnent pas de directives pour la gestion des données manquantes.
 
 
 # Description de la population
 
-La population (données démographiques & cliniques) sera présentée dans un tableau comparant le groupe traité & le groupe témoin afin de s'assurer qu'il n'y a pas de différence gênante.
+La population (données démographiques & cliniques) sera présentée dans un tableau comparant le groupe traité *&* le groupe témoin afin de s'assurer qu'il n'y a pas de différence gênante. La qualité de l'appariement sur l'âge & le sexe sera vérifiée. 
 
 
 # Objectif principal
 
-*Validation psychométrique du questionnaire FACE-Q adapté à la reconstruction
-(Questionnaire Nasal Reconstruction FACE-Q)*
+*Validation psychométrique du questionnaire \gls{faceq} adapté à la reconstruction
+(Questionnaire Nasal Reconstruction \gls{faceq})*
 
 ## Acceptabilité
 
@@ -64,21 +91,67 @@ L'acceptabilité sera jugée sur la qualité du remplissage en particulier le no
 
 ### Test-Retest
 
-La reproductibilité sera évaluée par des tests de corrélation réalisés pour les échelles du score FACE-Q entre les questionnaires remplis au moment de l'inclusion & ceux remplis sept jours plus tard. Les différences échelle par échelle seront présentées par des diagrammes de Bland & Altman.
+La reproductibilité sera évaluée par des tests de corrélation réalisés pour les échelles du score \gls{faceq} entre les questionnaires remplis au moment de l'inclusion & ceux remplis sept jours plus tard. Les différences échelle par échelle seront présentées par des diagrammes de Bland & Altman (figure @fig-bland sur données fictives).
+
+```{r}
+#| label: fig-bland
+#| fig-cap: Données fictives
+
+bb <- qnorm(.975)
+a1 <- floor(runif(170, 0, 100))
+a2 <- a1 +floor(runif(170, -10, 10))
+dif <- a2-a1
+mzz <- mean(dif)
+ss1 <- mzz + sd(dif)*2
+ss2 <- mzz - sd(dif)*2
+tibble(a1,a2,dif) |> 
+  ggplot() +
+  aes(x = a1, y = dif) +
+  geom_point(size = 1) +
+  geom_hline(yintercept = 0) +
+ geom_hline(aes(yintercept = mean(dif)), linetype = 2) +
+ geom_hline(aes(yintercept = mean(dif) + sd(dif)*bb), linetype = 2) +
+  geom_hline(aes(yintercept = mean(dif) - sd(dif)*bb), linetype = 2)  +
+  labs(title = "Reconstruction",
+      subtitle = "validation de l'échelle par test-retest",
+      x = "score à J0",
+      y = "scores J7 - J0",
+      caption = "Les lignes pointillées représentent la moyenne \n et l'intervalle de confiance à 95 % de la différence des scores") +
+  theme_light() +
+  scale_color_jama() +
+  scale_y_continuous(limits = c(mean(dif) - (sd(dif)*1.96 + 1),
+                                mean(dif) + (sd(dif)*1.96 + 1))) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    axis.title.y = element_text(
+      size = 12,
+      angle = 90,
+      vjust = .5
+    ),
+  axis.text.x = element_text(size = 12),
+  axis.text.y = element_text(size = 12),
+  legend.position = "none"
+  )
+```
 
 ### Cohérence interne
 
-La cohérence interne sera étudiée à l’aide du coefficient  $\alpha$ de Cronbach (package `psych` [@psych]).
+La cohérence interne sera étudiée à l’aide du coefficient  $\alpha$ de Cronbach (package `psych` [@psych]). Un $\alpha$ supérieur à \num{0.6} sera considéré comme satisfaisant.
 
 ## Validité du construit évaluée à l’aide de tests de corrélation
 
-Pour chacune des trois échelles une étude en corrélation multiples entre les items seront réalisées par \gls{pca} (packages `FactoMineR` [@facto] & `factoextra` [@factoextra]). Idéalement, vu la construction du score,  tous les items devraient être sur des axes proches & dans la même direction. Ce calcul ne peut être fait qu'après imputation des données manquantes, calcul qui n'est fiable que si celles-ci sont rares.
+Pour chacune des trois échelles une étude en corrélation multiples entre les items seront réalisées par \gls{pca} (packages `FactoMineR` [@facto] & `factoextra` [@factoextra]) --- figure @fig-pca . Idéalement, vu la construction du score,  tous les items devraient être sur des axes proches & dans des directions proches.
 
 ```{r}
-#| label: pca
-#| eval: false
-penguins |> ric)) |> 
-    dplyr::select(where(is.numeric))
+#| label: fig-pca
+#| fig-cap: corrélation multiples
+
+
+penguins |> 
+    dplyr::select(where(is.numeric)) |> 
   PCA(graph = FALSE) |> 
   fviz_pca_var()
 ```
@@ -87,19 +160,16 @@ penguins |> ric)) |>
 ## Sensibilité au changement
 
 
-
 ## Calcul de la Différence Cliniquement Significative 
 
- la Différence Minimum Cliniquement Intéressante (DMCI) sera approchée pour chaque échelle par la méthode basée sur la distribution aux seuils de \num{0.3} & \num{0.5} fois l'écart-type de la différence patient/témoin (le seuil usuel étant de \num{0.5}). Ce seuil est sensé représenter les variations liées au hasard des réponses. Une différence entre le groupe témoin & le groupe traité supérieure à ce seuil aurait donc une signification clinique en tout cas non expliquée par le hasard. Il s'agit donc d'un calcul statistique dont la signification clinique réelle peut être discutable. 
+ la \gls{mcid} (package `MCID` [@mcid]) sera approchée pour chaque échelle par la méthode basée sur la distribution aux seuils de \num{0.3} & \num{0.5} fois l'écart-type de la différence patient/témoin (le seuil usuel étant de \num{0.5}). Ce seuil est sensé représenter les variations liées au hasard des réponses. Une différence entre le groupe témoin & le groupe traité supérieure à ce seuil aurait donc une signification clinique en tout cas non expliquée par le hasard. Il s'agit donc d'un calcul statistique dont la signification clinique réelle peut être discutable. 
  
- En l'absence de critère extérieur fiable la méthode d'ancrage n'est pas utilisable.
+ **En l'absence de critère extérieur fiable la méthode d'ancrage n'est pas utilisable.** ???
  
 
-##Corrélation avec le score de qualité de vie globale liée à la santé SF-36
+## Corrélation avec le score de qualité de vie globale liée à la santé SF-36
 
-Les corrélations entre les trois échelles du score FACE-Q & les les deux scores composites du SF36 (mental & physique) seront calculées. 
-
-
+Les corrélations entre les trois échelles du score \gls{faceq} & les les deux scores composites du SF36 (mental & physique) seront calculées. 
 
 
 # Objectifs secondaires
@@ -108,9 +178,9 @@ Les corrélations entre les trois échelles du score FACE-Q & les les deux score
 
 *Évaluation de la satisfaction fonctionnelle post-opératoire obtenues grâce au questionnaire NOSE qui permet de mesurer l’importance de la gêne respiratoire nasale.*
 
-Le questionnaire NOSE est un score calculé sur sur 5 items (échelles de Likert) avec un résultat de 0 à 20. 
+Le questionnaire NOSE est un score calculé sur sur 5 items (échelles de Likert) avec un résultat de 0 à 100. Seuls seront pris en compte les scores complets en accord avec les promoteurs du score @lipan13.
 
-Les résultats de ce questionnaire seront présentés. Les corrélations seront ensuite calculées entre le score NOSE  & chacune des échelles du score FACE-Q.
+Les résultats de ce questionnaire seront présentés. Les corrélations seront ensuite calculées entre le score NOSE  & chacune des échelles du score \gls{faceq}.
 
 
 
@@ -120,4 +190,9 @@ L'analyse statistique sera réalisée avec le logiciel **R**[@rstat] & divers pa
 
 Un dépôt GitHub sera utilisé qui ne comprendra que le code & non les données ou résultats. Au besoin un faux tableau de données sera présenté pour permettre des tests.
 
-<https://github.com/philippemichel/FACE-Q>
+<https://github.com/philippemichel/\gls{faceq}>
+
+
+\printglossaries
+
+\addcontentsline{toc}{chapter}{C. Bibliographie}
