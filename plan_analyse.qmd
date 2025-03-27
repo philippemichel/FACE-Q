@@ -1,5 +1,5 @@
 ---
-subtitle: "Plan d'analyse statistique V0.2"
+subtitle: "Plan d'analyse statistique V1.0"
 toc: true
 lof: false
 lot: false
@@ -9,7 +9,7 @@ echo: false
 ```{r}
 #| label: setup
 
-rm(list=ls())
+rm(list = ls())
 library("baseph")
 library("tidyverse")
 library("FactoMineR")
@@ -29,13 +29,20 @@ patients <- patients$completeObs
 patients <- as_tibble(patients)
 ```
 
+
 # Généralités
 
 Le risque $\alpha$ retenu sera de \num{0.05} & la puissance de \num{0.8}.
 
-Les variables discrètes seront présentés en nombre avec le pourcentage. L'intervalle de confiance (à 95 %) sera calculé par bootstrap (package `boot` [@boot]). Le test du $\chi^2$ de Spearman sera utilisé sous réserve d'un effectif suffisant, à défaut le test exact de Fischer. Des graphiques seront réalisés pour les résultats importants (package `ggplot2` [@ggplot]).
+Les variables discrètes seront présentés en nombre avec le pourcentage. L'intervalle de confiance (à 95 %) sera calculé par bootstrap (package `boot` [@boot]). Le test du $\chi^2$ de Spearman sera utilisé sous réserve d'un effectif suffisant, à défaut le test exact de Fischer.. Des graphiques seront réalisés pour les résultats importants (package `ggplot2` [@ggplot]).
 
 Tous les exemples présentés dans ce document (graphiques, tableaux\dots) sont sur données fictives.
+
+L'analyse statistique sera réalisée avec le logiciel **R**[@rstat] & divers packages. Outre ceux cités dans le texte ou utilisera en particulier `tidyverse` [@tidy] & `baseph` [@baseph].
+
+Un dépôt GitHub sera utilisé qui ne comprendra que le code & non les données ou résultats. Au besoin un faux tableau de données sera présenté pour permettre des tests.
+
+<https://github.com/philippemichel/\gls{faceq}>
 
 ## FACE-Q
 
@@ -47,18 +54,19 @@ Dans tout le document pour l'échelle \gls{faceq} on utilisera les termes :
 
 - **Item** pour les réponses simples à une question. 
 - **Échelle** pour les regroupements d'items. Par exemple, l'échelle *apparence générale du visage* regroupe dix items.
-- **Score** pour les trois regroupements globaux d'items, à savoir *apparence* (4 échelles), *Qualité de vie liée à la santé* (4 échelles) & *Effets indésirables* (2 échelles).
+- **Score** pour les trois regroupements globaux d'échelles, à savoir *apparence* (4 échelles), *Qualité de vie liée à la santé* (4 échelles) & *Effets indésirables* (2 échelles).
 
 ### Score numériques
 
-Un score sera calculé pour chaque échelle par addition des différents items puis converti afin d'obtenir un score total allant de 0 à 100 en utilisant les tables fournies par le promoteur (voir @tab-convert).
+Un score sera calculé pour chaque échelle par addition des différents items puis converti afin d'obtenir un score total allant de 0 à 100 en utilisant les tables fournies par l'investigateur principal.
 
 ```{r}
 #| label: tbl-convert1
 #| tbl-cap: Table de conversion Apparence
+#| eval: false
 
 nom <- c("apparence générale du visage ", "nez", "narines", "peau")
-score_max_brut <- c(10, 10, 5, 12)*4
+score_max_brut <- c(10,10,5,12) * 4
 coef <- c(1, 2, 2, 3)
 tibble(nom, score_max_brut, coef) |> 
   mutate(score_max_final = score_max_brut*coef) |>
@@ -67,6 +75,8 @@ tibble(nom, score_max_brut, coef) |>
   footnote(general = "Données fictives")
 ```
 
+ 
+# Qualité de l'échantillon
 
 ## Taille de l'échantillon
 
@@ -76,9 +86,7 @@ Un groupe témoin de même effectif que le groupe de patients (soit 173 individu
 
 ## Données manquantes
 
-Le décompte des données manquantes sera réalisé & présenté par un tableau ou un graphique. Les variables (hors échelle \gls{faceq}) comportant trop de données manquantes ou non utilisables (> 40%) ne seront pas prises en compte après validation par le promoteur.
-
-Sinon les données manquantes seront imputées (imputations multiples, 150 itérations au maximum --- package `missmDA`[@miss]) si considérées comme manquant de manière complètement aléatoire (`MCAR`) ou manquant de manière aléatoire (`MAR`). Les données manquantes non aléatoires (`MNAR`) ne seront  imputées qu'après avis du promoteur.
+Le décompte des données manquantes sera réalisé & présenté par un tableau ou un graphique. Les variables (hors échelle \gls{faceq}) comportant trop (> 40%) de données manquantes ou non utilisables  ne seront pas prises en compte après validation par le promoteur. Les scores \gls{nose} ne seront pris en compte que si complets comme recommandé par le promoteur du score. Sinon les données manquantes seront imputées (imputations multiples, 150 itérations au maximum --- package `missmDA`[@miss]) si considérées comme manquant de manière complètement aléatoire (`MCAR`) ou de manière aléatoire (`MAR`). Les données manquantes non aléatoires (`MNAR`) ne seront  imputées qu'après avis du promoteur.
 
 Les résultats seront donnés bruts par item. Pour le score \gls{faceq} le nombre de données manquantes sera présenté par échelle. Pour mémoire, les [promoteurs du score](https://qportfolio.org/face-q/) ne donnent pas de directives pour la gestion des données manquantes.
 
@@ -118,7 +126,7 @@ L'acceptabilité sera jugée sur la qualité du remplissage en particulier le no
 
 ### Test-Retest
 
-La reproductibilité sera évaluée par des tests de corrélation réalisés pour les échelles du score \gls{faceq} entre les questionnaires remplis au moment de l'inclusion & ceux remplis sept jours plus tard. Les différences échelle par échelle seront présentées par des diagrammes de Bland & Altman (figure @fig-bland sur données fictives).
+La reproductibilité sera évaluée par des tests de corrélation réalisés pour les échelles du score \gls{faceq} entre les questionnaires remplis au moment de l'inclusion & ceux remplis sept jours plus tard. Les différences échelle par échelle seront présentées par des diagrammes de Bland & Altman (@fig-bland sur données fictives).
 
 ```{r}
 #| label: fig-bland
@@ -170,30 +178,50 @@ La cohérence interne sera étudiée à l’aide du coefficient  $\alpha$ de Cro
 
 ## Validité du construit évaluée à l’aide de tests de corrélation
 
-Des test de corrélations deux à deux seront réalisés entre tous les items & présentés en graphique (figure @fig-cor). SI certains items semblent avoir des réponses *aberrantes* (corrélations très faibles, corrélations négatives \dots) ils seront signalés au promoteur.
+Des test de corrélations deux à deux seront réalisés entre tous les items dans une échelle & présentés en graphique (@fig-cor). Si certains items semblent avoir des réponses *aberrantes* (corrélations très faibles voire négatives \dots) ils seront signalés au promoteur.
 
-Pour chacune des trois échelles une étude en corrélation multiples entre les items seront réalisées par \gls{pca} (packages `FactoMineR` [@facto] & `factoextra` [@factoextra]) --- figure @fig-pca . Idéalement, vu la construction du score,  tous les items devraient être sur des axes & des directions proches.
+Pour chacune des échelles une étude en corrélation multiples entre les items seront réalisées par \gls{pca} (packages `FactoMineR` [@facto] & `factoextra` [@factoextra]) --- @fig-pca avec le score total en variable ajoutée. Idéalement, vu la construction du score, tous les items devraient être sur des axes & des directions proches (pour exemple, sur la @fig-pca, les items `age` & `igs2` ont une corrélation forte & positive).
 
 ```{r}
 #| label: fig-pca
 #| fig-cap: corrélation multiples
 
 
-patients |> 
-    dplyr::select(where(is.numeric)) |> 
-  PCA(graph = FALSE) |> 
-  fviz_pca_var(repel = TRUE)
+patients |>
+  dplyr::select(where(is.numeric)) |>
+  PCA(graph = FALSE) |>
+  fviz_pca_var(repel = TRUE, title = "Analyse en composantes principales")
 ```
 
 
 ## Sensibilité au changement
 
+La sensibilité au changement ne sera évaluée que sur les \gls[rms] calculées entre les trois scores, deux à deux,à J0 & J7. Une analyse au niveau des items ou même des échelles reviendrait à multiplier les tests. L'interprétation, très discutée, sera basée sur le score `d` de Cohen.
 
-## Calcul de la Différence Cliniquement Significative 
+```{r}
+#| label: rmsprov
+#| eval: false
+
+aa <- floor(runif(170, 0, 10))
+bb <- aa + floor(runif(170, -2, 2)) 
+zz <- tibble(aa,bb) 
+
+rmsph <- function(df,aa,bb){
+  zz <- df |>
+  summarise(rms = (mean({{aa}}) - mean({{bb}}))/sd(c({{aa}},{{bb}})))
+#
+inter = cut(zz$rms[[1]], c(0,0.2,0.5,0.8,1.3,100), c("nul","faible","moyen","fort","très fort"))
+inter <- paste0("effet ", inter)
+return(list(rms = zz$rms[[1]], interaction = inter))
+}
+```
+
+
+## Calcul de la Différence Minimum Cliniquement Intéressante
 
  la \gls{mcid} (package `MCID` [@mcid]) sera approchée pour chaque échelle par la méthode basée sur la distribution aux seuils de \num{0.3} & \num{0.5} fois l'écart-type de la différence patient/témoin (le seuil usuel étant de \num{0.5}). Ce seuil est sensé représenter les variations liées au hasard des réponses. Une différence entre le groupe témoin & le groupe traité supérieure à ce seuil aurait donc une signification clinique en tout cas non expliquée par le hasard. Il s'agit donc d'un calcul statistique dont la signification clinique réelle peut être discutable. 
  
- **En l'absence de critère extérieur fiable la méthode d'ancrage n'est pas utilisable.** ???
+La \gls{mcid} sera ensuite calculée en prenant comme référence le score SF36 global (méthode avec ancrage).
  
 
 ## Corrélation avec le score de qualité de vie globale liée à la santé SF-36
@@ -203,25 +231,15 @@ Les corrélations entre les trois échelles du score \gls{faceq} & les les deux 
 
 # Objectifs secondaires
 
-## Objectif 1
+## Évaluation de la satisfaction fonctionnelle 
 
-*Évaluation de la satisfaction fonctionnelle post-opératoire obtenues grâce au questionnaire \textsc{nose} qui permet de mesurer l’importance de la gêne respiratoire nasale.*
+*Évaluation de la satisfaction fonctionnelle post-opératoire obtenues grâce au questionnaire \gls{nose} qui permet de mesurer l’importance de la gêne respiratoire nasale.*
 
-Le questionnaire \textsc{nose} est un score calculé sur sur 5 items (échelles de Likert) avec un résultat de 0 à 100. Seuls seront pris en compte les scores complets en accord avec les promoteurs du score (@lipan13).
+Le questionnaire \gls{nose} est un score calculé sur sur 5 items (échelles de Likert) avec un résultat de 0 à 100. Seuls seront pris en compte les scores complets en accord avec les promoteurs du score (@lipan13).
 
 Les résultats de ce questionnaire seront présentés. Les corrélations seront ensuite calculées entre le score \textsc{nose}  & chacune des échelles du score \gls{faceq}.
 
 
-
-# Technique {.appendix}
-
-L'analyse statistique sera réalisée avec le logiciel **R**[@rstat] & divers packages. Outre ceux cités dans le texte ou utilisera en particulier `tidyverse` [@tidy] & `baseph` [@baseph].
-
-Un dépôt GitHub sera utilisé qui ne comprendra que le code & non les données ou résultats. Au besoin un faux tableau de données sera présenté pour permettre des tests.
-
-<https://github.com/philippemichel/\gls{faceq}>
-
-
 \printglossaries
 
-\addcontentsline{toc}{chapter}{C. Bibliographie}
+\addcontentsline{toc}{chapter}{Bibliographie}
