@@ -2,9 +2,13 @@ title: "FACE-Q"
 lang: fr
 author:
   - name: "Dr Philippe MICHEL"
+    id: phm
+    orcid: 0000-0003-2392-7186
+    # email: philippe.michel@ght-novo.fr
     affiliations:
       name: "Hôpital NOVO"
       department: "Unité de Soutien à la Recherche Clinique"
+      city: "Pontoise"
 format:
  titlepage-pdf:
   titlepage: bg-image

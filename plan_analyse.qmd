@@ -1,5 +1,5 @@
 ---
-subtitle: "Plan d'analyse statistique V1.0"
+subtitle: "Plan d'analyse statistique V1.1"
 toc: true
 lof: false
 lot: false
@@ -29,12 +29,11 @@ patients <- patients$completeObs
 patients <- as_tibble(patients)
 ```
 
-
 # Généralités
 
 Le risque $\alpha$ retenu sera de \num{0.05} & la puissance de \num{0.8}.
 
-Les variables discrètes seront présentés en nombre avec le pourcentage. L'intervalle de confiance (à 95 %) sera calculé par bootstrap (package `boot` [@boot]). Le test du $\chi^2$ de Spearman sera utilisé sous réserve d'un effectif suffisant, à défaut le test exact de Fischer.. Des graphiques seront réalisés pour les résultats importants (package `ggplot2` [@ggplot]).
+Les variables discrètes seront présentés en nombre avec le pourcentage. L'intervalle de confiance (à 95 %) sera calculé par bootstrap (package `boot` [@boot]). Le test du $\chi^2$ de Spearman sera utilisé sous réserve d'un effectif suffisant, à défaut le test exact de Fischer. Des graphiques seront réalisés pour les résultats importants (package `ggplot2` [@ggplot]).
 
 Tous les exemples présentés dans ce document (graphiques, tableaux\dots) sont sur données fictives.
 
@@ -42,19 +41,19 @@ L'analyse statistique sera réalisée avec le logiciel **R**[@rstat] & divers pa
 
 Un dépôt GitHub sera utilisé qui ne comprendra que le code & non les données ou résultats. Au besoin un faux tableau de données sera présenté pour permettre des tests.
 
-<https://github.com/philippemichel/\gls{faceq}>
+[https://github.com/philippemichel/\\gls{faceq}](https://github.com/philippemichel/\gls%7Bfaceq%7D){.uri}
 
 ## FACE-Q
 
 Le score utilisé & désigné dans tout le document comme \gls{faceq} est une sélection d'échelles du score total \gls{faceq} (possibilité prévue par les [concepteurs du score](https://qportfolio.org/face-q/)) traduit en Français.
 
-Les items du score \gls{faceq} sont des échelles de Likert à 4 niveaux. IL s'agit donc de variables discrètes ordonnées qui seront traitées comme des valeurs numériques avec un nombre de valeurs possibles limité donc pour lesquelles aucune hypothèse de normalité n'a du sens. On utilisera des tests non paramétriques : test des rang de Wilcoxon pour les comparaisons deux à deux ou test de corrélation de Kendall. 
+Les items du score \gls{faceq} sont des échelles de Likert à 4 niveaux. IL s'agit donc de variables discrètes ordonnées qui seront traitées comme des valeurs numériques avec un nombre de valeurs possibles limité donc pour lesquelles aucune hypothèse de normalité n'a du sens. On utilisera des tests non paramétriques : test des rangs de Wilcoxon pour les comparaisons deux à deux ou ANOVA dans les autres cas[@Jos].
 
-Dans tout le document pour l'échelle \gls{faceq} on utilisera les termes : 
+Dans tout le document pour l'échelle \gls{faceq} on utilisera les termes :
 
-- **Item** pour les réponses simples à une question. 
-- **Échelle** pour les regroupements d'items. Par exemple, l'échelle *apparence générale du visage* regroupe dix items.
-- **Score** pour les trois regroupements globaux d'échelles, à savoir *apparence* (4 échelles), *Qualité de vie liée à la santé* (4 échelles) & *Effets indésirables* (2 échelles).
+-   **Item** pour les réponses simples à une question.
+-   **Échelle** pour les regroupements d'items. Par exemple, l'échelle *apparence générale du visage* regroupe dix items.
+-   **Score** pour les trois regroupements globaux d'échelles, à savoir *apparence* (4 échelles), *Qualité de vie liée à la santé* (4 échelles) & *Effets indésirables* (2 échelles).
 
 ### Score numériques
 
@@ -75,18 +74,17 @@ tibble(nom, score_max_brut, coef) |>
   footnote(general = "Données fictives")
 ```
 
- 
 # Qualité de l'échantillon
 
 ## Taille de l'échantillon
 
 Pour une précision de 10%, un intervalle de confiance bilatéral de 95%, un coefficient $\alpha$ de Cronbach estimé à 80% & un nombre d’items compris entre 10 et 80 alors il faut inclure au moins 138 patients dans l’étude. Une majoration de 20% pour données incomplètes conduit à un effectif de 173 patients. Sur la base d’un taux de réponse estimé de 50%, il sera nécessaire de contacter 346 patients éligibles.
 
-Un groupe témoin de même effectif que le groupe de patients (soit 173 individus), sera inclus. Il sera apparié au groupe de patients en fréquence sur l’âge et le sexe. Ce groupe permettra d’estimer la satisfaction liée à l’apparence et la qualité de vie dans un groupe de sujets indemnes de chirurgie cutanée du visage. 
+Un groupe témoin de même effectif que le groupe de patients (soit 173 individus), sera inclus. Il sera apparié au groupe de patients en fréquence sur l’âge et le sexe. Ce groupe permettra d’estimer la satisfaction liée à l’apparence et la qualité de vie dans un groupe de sujets indemnes de chirurgie cutanée du visage.
 
 ## Données manquantes
 
-Le décompte des données manquantes sera réalisé & présenté par un tableau ou un graphique. Les variables (hors échelle \gls{faceq}) comportant trop (> 40%) de données manquantes ou non utilisables  ne seront pas prises en compte après validation par le promoteur. Les scores \gls{nose} ne seront pris en compte que si complets comme recommandé par le promoteur du score. Sinon les données manquantes seront imputées (imputations multiples, 150 itérations au maximum --- package `missmDA`[@miss]) si considérées comme manquant de manière complètement aléatoire (`MCAR`) ou de manière aléatoire (`MAR`). Les données manquantes non aléatoires (`MNAR`) ne seront  imputées qu'après avis du promoteur.
+Le décompte des données manquantes sera réalisé & présenté par un tableau ou un graphique. Les variables (hors échelle \gls{faceq}) comportant trop (\> 40%) de données manquantes ou non utilisables ne seront pas prises en compte après validation par le promoteur. Les scores \gls{nose} ne seront pris en compte que si complets comme recommandé par le promoteur du score. Sinon les données manquantes seront imputées (imputations multiples, 150 itérations au maximum --- package `missmDA`[@miss]) si considérées comme manquant de manière complètement aléatoire (`MCAR`) ou de manière aléatoire (`MAR`). Les données manquantes non aléatoires (`MNAR`) ne seront imputées qu'après avis du promoteur.
 
 Les résultats seront donnés bruts par item. Pour le score \gls{faceq} le nombre de données manquantes sera présenté par échelle. Pour mémoire, les [promoteurs du score](https://qportfolio.org/face-q/) ne donnent pas de directives pour la gestion des données manquantes.
 
@@ -96,7 +94,7 @@ Un calcul des corrélations entre toutes les variables (hors scores) sera réali
 
 ```{r}
 #| label: fig-cor
-#| fig-cap: Corrélations 
+#| fig-cap: "Corrélations entre les variables"
 
 zz <- patients |>
   mutate(across(is.character, as.factor)) |> 
@@ -106,21 +104,17 @@ zz <- patients |>
 
 ```
 
-
-
 # Description de la population
 
-La population (données démographiques & cliniques) sera présentée dans un tableau comparant le groupe traité & le groupe témoin afin de s'assurer qu'il n'y a pas de différence gênante. La qualité de l'appariement sur l'âge & le sexe sera vérifiée. 
-
+La population (données démographiques & cliniques) sera présentée dans un tableau comparant le groupe traité & le groupe témoin afin de s'assurer qu'il n'y a pas de différence gênante. La qualité de l'appariement sur l'âge & le sexe sera vérifiée.
 
 # Objectif principal
 
-*Validation psychométrique du questionnaire \gls{faceq} adapté à la reconstruction
-(Questionnaire Nasal Reconstruction \gls{faceq})*
+*Validation psychométrique du questionnaire* \gls{faceq} adapté à la reconstruction (Questionnaire Nasal Reconstruction \gls{faceq})
 
 ## Acceptabilité
 
-L'acceptabilité sera jugée sur la qualité du remplissage en particulier le nombre de données manquantes. 
+L'acceptabilité sera jugée sur la qualité du remplissage en particulier le nombre de données manquantes.
 
 ## Fiabilité de la version francophone des échelles du Nasal Reconstruction FACE-Q
 
@@ -174,7 +168,7 @@ tibble(a1,a2,dif) |>
 
 ### Cohérence interne
 
-La cohérence interne sera étudiée à l’aide du coefficient  $\alpha$ de Cronbach (package `psych` [@psych]). Un $\alpha$ supérieur à \num{0.7} sera considéré comme satisfaisant.
+La cohérence interne du test sera étudiée dans le groupe `patients` à l’aide du coefficient $\alpha$ de Cronbach (package `psych` [@psych]). Un $\alpha$ supérieur à \num{0.7} sera considéré comme satisfaisant.
 
 ## Validité du construit évaluée à l’aide de tests de corrélation
 
@@ -193,10 +187,9 @@ patients |>
   fviz_pca_var(repel = TRUE, title = "Analyse en composantes principales")
 ```
 
-
 ## Sensibilité au changement
 
-La sensibilité au changement ne sera évaluée que sur les \gls[rms] calculées entre les trois scores, deux à deux,à J0 & J7. Une analyse au niveau des items ou même des échelles reviendrait à multiplier les tests. L'interprétation, très discutée, sera basée sur le score `d` de Cohen.
+La sensibilité au changement ne sera évaluée que sur les \\gls\[rms\] calculées entre les trois scores, deux à deux,à J0 & J7. Une analyse au niveau des items ou même des échelles reviendrait à multiplier les tests. L'interprétation, très discutée, sera basée sur le score `d` de Cohen.
 
 ```{r}
 #| label: rmsprov
@@ -216,29 +209,25 @@ return(list(rms = zz$rms[[1]], interaction = inter))
 }
 ```
 
-
 ## Calcul de la Différence Minimum Cliniquement Intéressante
 
- la \gls{mcid} (package `MCID` [@mcid]) sera approchée pour chaque échelle par la méthode basée sur la distribution aux seuils de \num{0.3} & \num{0.5} fois l'écart-type de la différence patient/témoin (le seuil usuel étant de \num{0.5}). Ce seuil est sensé représenter les variations liées au hasard des réponses. Une différence entre le groupe témoin & le groupe traité supérieure à ce seuil aurait donc une signification clinique en tout cas non expliquée par le hasard. Il s'agit donc d'un calcul statistique dont la signification clinique réelle peut être discutable. 
- 
+la \gls{mcid} (package `MCID` [@mcid]) sera approchée pour chaque échelle par la méthode basée sur la distribution aux seuils de \num{0.3} & \num{0.5} fois l'écart-type de la différence patient/témoin (le seuil usuel étant de \num{0.5}). Ce seuil est sensé représenter les variations liées au hasard des réponses. Une différence entre le groupe témoin & le groupe traité supérieure à ce seuil aurait donc une signification clinique en tout cas non expliquée par le hasard. Il s'agit donc d'un calcul statistique dont la signification clinique réelle peut être discutable.
+
 La \gls{mcid} sera ensuite calculée en prenant comme référence le score SF36 global (méthode avec ancrage).
- 
 
 ## Corrélation avec le score de qualité de vie globale liée à la santé SF-36
 
-Les corrélations entre les trois échelles du score \gls{faceq} & les les deux scores composites du SF36 (mental & physique) seront calculées. 
-
+Les corrélations entre les trois échelles du score \gls{faceq} & les les deux scores composites du SF36 (mental & physique) seront calculées.
 
 # Objectifs secondaires
 
-## Évaluation de la satisfaction fonctionnelle 
+## Évaluation de la satisfaction fonctionnelle
 
-*Évaluation de la satisfaction fonctionnelle post-opératoire obtenues grâce au questionnaire \gls{nose} qui permet de mesurer l’importance de la gêne respiratoire nasale.*
+*Évaluation de la satisfaction fonctionnelle post-opératoire obtenues grâce au questionnaire* \gls{nose} qui permet de mesurer l’importance de la gêne respiratoire nasale.
 
 Le questionnaire \gls{nose} est un score calculé sur sur 5 items (échelles de Likert) avec un résultat de 0 à 100. Seuls seront pris en compte les scores complets en accord avec les promoteurs du score (@lipan13).
 
-Les résultats de ce questionnaire seront présentés. Les corrélations seront ensuite calculées entre le score \textsc{nose}  & chacune des échelles du score \gls{faceq}.
-
+Les résultats de ce questionnaire seront présentés. Les corrélations seront ensuite calculées entre le score \textsc{nose} & chacune des échelles du score \gls{faceq}.
 
 \printglossaries
 
