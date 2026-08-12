@@ -50,3 +50,8 @@ README.tex
 README_files
 README.log
 README.aux
+**/*.quarto_ipynb
+datas
+entete.tex
+rapport_faceq_v01.tex
+test.R
