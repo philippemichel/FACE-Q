@@ -50,3 +50,5 @@ README.tex
 README_files
 README.log
 README.aux
+
+**/*.quarto_ipynb
