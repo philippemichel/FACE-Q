@@ -217,13 +217,13 @@ La \gls{mcid} sera ensuite calculée en prenant comme référence le score SF36 
 
 ## Corrélation avec le score de qualité de vie globale liée à la santé SF-36
 
-Les corrélations entre les trois échelles du score \gls{faceq} & les les deux scores composites du SF36 (mental & physique) seront calculées.
+Les corrélations entre les trois échelles du score \gls{faceq} & les les deux scores composites du SF36 (mental & physique) seront calculées (test de Pearson ou de Spearman selon la distribution des scores).
 
 # Objectifs secondaires
 
 ## Évaluation de la satisfaction fonctionnelle
 
-*Évaluation de la satisfaction fonctionnelle post-opératoire obtenues grâce au questionnaire* \gls{nose} qui permet de mesurer l’importance de la gêne respiratoire nasale.
+*Évaluation de la satisfaction fonctionnelle post-opératoire obtenues grâce au questionnaire* \gls{nose} qui permet de mesurer l’importance de la gêne respiratoire nasale. Ce questionnaire est rempli uniquement par les patients, non par les témoins. 
 
 Le questionnaire \gls{nose} est un score calculé sur sur 5 items (échelles de Likert) avec un résultat de 0 à 100. Seuls seront pris en compte les scores complets en accord avec les promoteurs du score (@lipan13).
 
