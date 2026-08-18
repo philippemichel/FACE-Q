@@ -2,9 +2,11 @@
 subtitle: "Rapport statistique V0.1"
 cache: true
 ---
+:::{.panel-tabset}
 
+# Généralités
 
-```{r}
+```{r filename = "setup"}
 #| label: setup
 
 rm(list = ls())
@@ -13,12 +15,13 @@ library(baseph)
 library(tidyverse)
 library(gtsummary)
 library(kableExtra)
-library(psych)
+library("forestmodel")
 library(labelled)
 library(epiDisplay)
 library(visdat)
 library(corrplot)
 library(biostats)
+#library("psych")
 library("colorspace")
 library("apyramid")
 library("FactoMineR")
@@ -27,8 +30,7 @@ library("missMDA")
 library("readODS")
 library("ggsci")
 library("ggstats")
-library("survival")
-library("survminer")
+library("plotly")
 #
 load("datas/faceq.RData")
 expx <- FALSE
@@ -42,11 +44,60 @@ stt <- list(
 )
 ```
 
-\bigskip
+```{r}
+#| label: numfpat
+
+zz <- pat |>
+  dplyr::select(a_symetrie_visage:d_parfaite_sante) |>
+  mutate(across(everything(), ~ as.numeric(str_sub(.x, 1, 1))))
+
+dld <- c(6,28,38,61,69,79)
+dlf <- c(15,37,42,68,78,82)
+nnq <- c("Apparence faciale", "Apparence du nez", "Apparence narines", 
+         "Fonction sociale", "Fonction psychologique", 
+         "Évenements indésirables nez"
+         )
+patn <- tibble(id = pat$id, jj = pat$moment)
+for (i in seq(1, length(dld))) {
+  dp <- zz[, (dld[i]):dlf[i]]
+  nom <- nnq[i]
+  ptn <- tibble(rowSums(dp, na.rm = TRUE))
+  names(ptn)[1] <- nom
+  patn <- cbind(patn, ptn)
+}
+# On ne garde que les paires complètes
+
+patnx <- 
+  patn |> 
+  group_by(id) |> 
+  dplyr::filter(n() == 2) |> 
+  ungroup() |> 
+  droplevels() |> 
+  arrange(id, jj)
+```
+
+**Validation francophone du questionnaire FACE-Q pour la reconstruction/réhabilitation dans les suites d’un carcinome cutané nasal.**
+
+Recherche non interventionnelle ne comportant aucun risque ni contrainte.
+
+<HR>
+
+**Investigateur** **Coordonnateur** : Khaled AL TABAA --- Service d'ORL (Hôpital NOVO - Site de Pontoise)
+
+**Chef de projet** : Mathilde WLODARCZYK
+
+**Méthodologiste** : Chrystelle VIDAL - GIRCI Île de France
+
+**Data-manager** : Nathanaël CHARRIER
+
+**Statisticien** : Philippe MICHEL
+
+<HR>
 
 
-Pour toutes les variables binaire (oui/non), seul le code "`Oui`" est présenté dans la plupart des tableaux.
-
+::: {.callout-note}
+Pour toutes les variables binaires (oui/non), seul le code "`Oui`" est présenté dans la plupart des tableaux.
+:::
 # Validation de la population
 
 
@@ -101,7 +152,7 @@ vis_dat(tem[,c(3,4,6:96)],
     axis.text.x = element_text(angle = 70, vjust =0, hjust=0))
 ```
 
-La qualité de remplissage est très bonne avec très peu de donénes manquantes.
+La qualité de remplissage des questionnaires est très bonne avec très peu de données manquantes. 
 
 
 # Description de la population
@@ -142,8 +193,7 @@ demog |>
   pexptabph(exp = expx, nomfich = classeur , nomsheet = "tumeur1", lg = TRUE)
 ```
 
-# Fiabilité de la version francophone des échelles du Nasal Reconstruction FACE-Q
-
+# Fiabilité de la version francophone
 ## Test-Retest
 
 ### Esthétique
@@ -191,39 +241,9 @@ tt |>
 
 ```
 
-# Numérisation des réponses par classe
-
-```{r}
-#| label: numfpat
-
-zz <- pat |>
-  dplyr::select(a_symetrie_visage:d_parfaite_sante) |>
-  mutate(across(everything(), ~ as.numeric(str_sub(.x, 1, 1))))
-
-dl <- c(0, 10, 22, 32, 49, 55, 63, 73, 77, 96, 106, 110, 116, 127, 130)
-patn <- tibble(id = pat$id, jj = pat$moment)
-for (i in seq_along(dl[-length(dl)])) {
-  dp <- zz[, (dl[i] + 1):dl[i + 1]]
-  nom <- paste0("pat", i)
-  ptn <- tibble(rowSums(dp, na.rm = TRUE))
-  names(ptn)[1] <- nom
-  patn <- cbind(patn, ptn)
-}
-# On ne garde que les paires complètes
-
-patnx <- 
-  patn |> 
-  group_by(id) |> 
-  dplyr::filter(n() == 2) |> 
-  ungroup() |> 
-  droplevels() |> 
-  arrange(id, jj)
-```
-
 # Cohérence interne
 
-
-On e test $\alpha$  de Cronbach qui est un indicateur de la cohérence interne d'un questionnaire. Il varie entre 0 et 1, avec des valeurs plus élevées indiquant une meilleure cohérence interne. En général, un $\alpha$ supérieur à 0,7 est considéré comme acceptable, tandis qu'un $\alpha$ supérieur à 0,8 est considéré comme bon.
+On e test $\alpha$  de Cronbach qui est un indicateur de la cohérence interne d'un questionnaire. Il varie entre 0 et 1, avec des valeurs plus élevées indiquant une meilleure cohérence interne. En général, un $\alpha$ supérieur à 0,7 est considéré comme acceptable, tandis qu'un $\alpha$ supérieur à 0,8 est considéré comme bon. 
 
 Pour les patients le test n'est réalisé que sur les réponses à J0.
 
@@ -232,7 +252,7 @@ Pour les patients le test n'est réalisé que sur les réponses à J0.
 
 zz <- patnx |> 
   dplyr::filter(jj == "J0") |> 
-  dplyr::select(c(3:16)) 
+  dplyr::select(c(3:ncol(patnx))) 
 zz <- psych::alpha(zz)
 mm <- round(as.numeric(zz$feldt[[2]]),2)
 bb <- round(as.numeric(zz$feldt[[1]]),2)
@@ -253,7 +273,7 @@ Les tests $\alpha$  de Cronbach donnent :
 
 zz <- patnx |> 
  # dplyr::filter(jj == "J0") |> 
-  dplyr::select(jj:pat7) 
+  dplyr::select(!id) 
 
 rtt <- PCA(as.data.frame(zz),quali.sup = 1, graph = FALSE)
 ```
@@ -263,7 +283,9 @@ rtt <- PCA(as.data.frame(zz),quali.sup = 1, graph = FALSE)
 #| fig-cap: Analyse factorielle - par cas
 
 rtt |> 
-  fviz_pca_ind()
+  fviz_pca_var(repel = TRUE, 
+               col.var = "contrib",
+               title = "Analyse factorielle - Échelles du FACE-Q nasal")
 ```
 
 
@@ -272,4 +294,4 @@ rtt |>
 
 ## Différence Minimum Cliniquement Intéressante
 
-
+:::

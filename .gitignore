@@ -7,4 +7,13 @@ datas
 .R*
 .quarto*
 _extensions*
-
+Doc
+FACE-Q.Rproj
+plan_analyse.tex
+rapport_faceq_v01.tex
+/.quarto/
+**/*.quarto_ipynb
+x_quarto.yml
+rapport_faceq_v01.aux
+rapport_faceq_v01.log
+QTDublinIrish.otf
