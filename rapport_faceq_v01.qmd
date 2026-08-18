@@ -13,7 +13,7 @@ library(baseph)
 library(tidyverse)
 library(gtsummary)
 library(kableExtra)
-library("forestmodel")
+library(psych)
 library(labelled)
 library(epiDisplay)
 library(visdat)
@@ -101,6 +101,9 @@ vis_dat(tem[,c(3,4,6:96)],
     axis.text.x = element_text(angle = 70, vjust =0, hjust=0))
 ```
 
+La qualité de remplissage est très bonne avec très peu de donénes manquantes.
+
+
 # Description de la population
 
 ```{r}
@@ -139,9 +142,11 @@ demog |>
   pexptabph(exp = expx, nomfich = classeur , nomsheet = "tumeur1", lg = TRUE)
 ```
 
-# Réponses
+# Fiabilité de la version francophone des échelles du Nasal Reconstruction FACE-Q
 
-## Esthétique
+## Test-Retest
+
+### Esthétique
 
 ```{r}
 #| label: prepa-esthetique
@@ -156,7 +161,7 @@ tt <- tt |>
 ```
 
 ```{r}
-#| label: fig-esthetique
+#| label: fig-esthetiquep
 #| fig-cap: Échelle esthétique - Patients
 
 tt |> dplyr::filter(groupe != "témoin") |>
@@ -167,7 +172,7 @@ tt |> dplyr::filter(groupe != "témoin") |>
 ```
 
 ```{r}
-#| label: fig-esthetique
+#| label: fig-esthetiquet
 #| fig-cap: Échelle esthétique - Témoins
 
 tt |> dplyr::filter(groupe == "témoin") |>
@@ -185,4 +190,86 @@ tt |>
   tbl_likert(include = c(a_symetrie_visage:i_reveil))
 
 ```
+
+# Numérisation des réponses par classe
+
+```{r}
+#| label: numfpat
+
+zz <- pat |>
+  dplyr::select(a_symetrie_visage:d_parfaite_sante) |>
+  mutate(across(everything(), ~ as.numeric(str_sub(.x, 1, 1))))
+
+dl <- c(0, 10, 22, 32, 49, 55, 63, 73, 77, 96, 106, 110, 116, 127, 130)
+patn <- tibble(id = pat$id, jj = pat$moment)
+for (i in seq_along(dl[-length(dl)])) {
+  dp <- zz[, (dl[i] + 1):dl[i + 1]]
+  nom <- paste0("pat", i)
+  ptn <- tibble(rowSums(dp, na.rm = TRUE))
+  names(ptn)[1] <- nom
+  patn <- cbind(patn, ptn)
+}
+# On ne garde que les paires complètes
+
+patnx <- 
+  patn |> 
+  group_by(id) |> 
+  dplyr::filter(n() == 2) |> 
+  ungroup() |> 
+  droplevels() |> 
+  arrange(id, jj)
+```
+
+# Cohérence interne
+
+
+On e test $\alpha$  de Cronbach qui est un indicateur de la cohérence interne d'un questionnaire. Il varie entre 0 et 1, avec des valeurs plus élevées indiquant une meilleure cohérence interne. En général, un $\alpha$ supérieur à 0,7 est considéré comme acceptable, tandis qu'un $\alpha$ supérieur à 0,8 est considéré comme bon.
+
+Pour les patients le test n'est réalisé que sur les réponses à J0.
+
+```{r}
+#| label: alpha-pat
+
+zz <- patnx |> 
+  dplyr::filter(jj == "J0") |> 
+  dplyr::select(c(3:16)) 
+zz <- psych::alpha(zz)
+mm <- round(as.numeric(zz$feldt[[2]]),2)
+bb <- round(as.numeric(zz$feldt[[1]]),2)
+hh <- round(as.numeric(zz$feldt[[3]]),2)
+al <- paste0( hh, " [", bb, " ; ", mm, "]")
+
+```
+
+Les tests $\alpha$  de Cronbach donnent : 
+
+- pour les patients : `r al`
+- pour les témoins : `r al`
+
+## Validité du construit évaluée à l’aide de tests de corrélation
+
+```{r}
+#| label: prepa_facto
+
+zz <- patnx |> 
+ # dplyr::filter(jj == "J0") |> 
+  dplyr::select(jj:pat7) 
+
+rtt <- PCA(as.data.frame(zz),quali.sup = 1, graph = FALSE)
+```
+
+```{r}
+#| label: fig-factoval
+#| fig-cap: Analyse factorielle - par cas
+
+rtt |> 
+  fviz_pca_ind()
+```
+
+
+
+### Tests de corrélation
+
+## Différence Minimum Cliniquement Intéressante
+
 
