@@ -18,6 +18,7 @@ library(labelled)
 library(epiDisplay)
 library(visdat)
 library(corrplot)
+library(scales)
 library(biostats)
 library(rstatix)
 library("colorspace")
@@ -30,8 +31,8 @@ library("ggsci")
 library("ggstats")
 #
 load("datas/faceq.RData")
-expx <- FALSE
-classeur <- "faceq_1907v3.ods"
+expx <- TRUE
+classeur <- "faceq_2008v1.ods"
 # if (exp){system(paste0("rm -f ",classeur))}
 #
 ptest <- list(all_continuous() ~ "t.test", all_categorical() ~ "chisq.test")
@@ -249,16 +250,21 @@ for (i in 1:10) {
   nq <- spat[[i,3]] - spat[[i,2]] + 1
   ptn <- tibble(rowSums(dp, na.rm = TRUE))
   ptn <- 100*ptn/(nq*spat[[i,4]])
+  ptn <- ptn$'rowSums(dp, na.rm = TRUE)'
+  ptn <- replace_values(ptn,0 ~ NA)
+  ptn <- tibble(ptn)
   names(ptn)[1] <- spat[i,1]
   patn <- cbind(patn, ptn)
 }
+
 
 
 scorepat <- patn |> 
   dplyr::select(id,jj) |> 
   mutate(Apparence = rowSums(patn[,3:6])/4) |> 
   mutate('Qualité de vie' = rowSums(patn[,7:10])/4) |> 
-  mutate('Effets secondaires' = rowSums(patn[,11:12])/2) 
+  mutate('Effets secondaires' = rowSums(patn[,11:12])/2) |> 
+  dplyr::filter_out(Apparence <3 | 'Effets secondaires' <3)
 
 ```
 
@@ -268,10 +274,40 @@ scorepat <- patn |>
 patn |> 
   dplyr::select(!id) |> 
   tbl_summary(by = "jj", 
+              missing = "no",
               statistic = stt) |> 
   tabx() |> 
     gexptabph(exp = expx, nomfich = classeur , nomsheet = "echellespat")
 ```
+
+```{r}
+#| label: fig-echelles-pat
+#| fig-cap: "Patients : J0 vs J7 (Échelles)"
+#| fig-asp: 2
+
+patn |> 
+  pivot_longer(cols = 3:12) |> 
+  ggplot() +
+  aes(x = name, y = value, fill = jj) +
+  geom_violin() +
+  coord_flip()+
+  scale_x_discrete(labels = label_wrap(30)) +
+    labs(
+    title = "Patients : J0 vs J7 (Échelles)",
+    y = "score / 100"
+  ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.position = "bottom"
+  )
+```
+
 
 ```{r}
 #| label: tbl-scores-pat
@@ -279,10 +315,45 @@ patn |>
 scorepat |> 
   dplyr::select(!id) |> 
   tbl_summary(by = "jj", 
+              missing = "no",
               statistic = stt) |> 
   tabx() |> 
-    gexptabph(exp = expx, nomfich = classeur , nomsheet = "echellespat")
+    gexptabph(exp = expx, nomfich = classeur , nomsheet = "scorespat")
 ```
+
+
+```{r}
+#| label: fig-scores-pat
+#| fig-cap: "Patients : J0 vs J7 (scores)"
+#| fig-asp: 1.5
+
+scorepat |> 
+  pivot_longer(cols = 3:5) |> 
+  ggplot() +
+  aes(x = name, y = value, fill = jj) +
+  geom_violin() +
+  coord_flip()+
+  scale_x_discrete(labels = label_wrap(30)) +
+    labs(
+    title = "Patients : J0 vs J7 (Échelles)",
+    y = "score / 100"
+  ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.position = "bottom"
+  )
+```
+
+Les items d'effets secondaires sont à 1 pour l'absence d'EI & à 5 pour le EI les plus gênants. Ils évoluent donc à l'inverse des items. [^ei]
+
+[^ei] À voir si on les garde comme ça ous is je les inverse.
+
 
 # Patients vs témoins
 
@@ -296,10 +367,13 @@ zz <- tem |>
 temn <- tibble(id = tem$id, jj = tem$groupe)
 for (i in 1:6) {
   dp <- zz[, stem[[i,2]]: stem[[i,3]]]
-  nq <- stem[[i,3]] - stem[[i,2]] + 1
+  nq <- spat[[i,3]] - spat[[i,2]] + 1
   ptn <- tibble(rowSums(dp, na.rm = TRUE))
-  ptn <- 100*ptn/(nq*stem[[i,4]])
-  names(ptn)[1] <- stem[i,1]
+  ptn <- 100*ptn/(nq*spat[[i,4]])
+  ptn <- ptn$'rowSums(dp, na.rm = TRUE)'
+  ptn <- replace_values(ptn,0 ~ NA)
+  ptn <- tibble(ptn)
+  names(ptn)[1] <- spat[i,1]
   temn <- cbind(temn, ptn)
 }
 
@@ -312,14 +386,43 @@ scoretem <- temn |>
 
 ```{r}
 #| label: tbl-echelle-tem
-#| tbl-cap: Patients vs témoins
+#| tbl-cap: "Patients vs témoins (échelles)"
 
 temn |> 
   dplyr::select(!id) |> 
   tbl_summary(by = "jj", 
-              statistic = stt) |> 
+              statistic = stt, 
+              missing = "no") |> 
   tabx() |> 
     gexptabph(exp = expx, nomfich = classeur , nomsheet = "echelletem")
+```
+
+```{r}
+#| label: fig-echelle-tem
+#| fig-cap: "Patients vs témoins (échelles)"
+#| fig-asp: 1.5
+
+temn |> 
+  pivot_longer(cols = 3:5) |> 
+  ggplot() +
+  aes(x = name, y = value, fill = jj) +
+  geom_violin() +
+  coord_flip()+
+  scale_x_discrete(labels = label_wrap(30)) +
+    labs(
+    title = "Patients vs témoins (échelles)",
+    y = "score / 100"
+  ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.position = "bottom"
+  )
 ```
 
 ```{r}
@@ -328,11 +431,39 @@ temn |>
 scoretem |> 
   dplyr::select(!id) |> 
   tbl_summary(by = "jj", 
+               missing = "no",
               statistic = stt) |> 
   tabx() |> 
-    gexptabph(exp = expx, nomfich = classeur , nomsheet = "echellestem")
+    gexptabph(exp = expx, nomfich = classeur , nomsheet = "scorestem")
 ```
 
+```{r}
+#| label: fig-scores-tem
+#| fig-cap: "Patients vs témoins (scores)"
+#| fig-asp: 1.5
+
+scoretem |> 
+  pivot_longer(cols = 3:4) |> 
+  ggplot() +
+  aes(x = name, y = value, fill = jj) +
+  geom_violin() +
+  coord_flip()+
+  scale_x_discrete(labels = label_wrap(30)) +
+    labs(
+    title = "Patients vs témoins (scores)",
+    y = "score / 100"
+  ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.position = "bottom"
+  )
+```
 
 
 Les témoins sont moins satisfaits de leur nez ou visage que les patients !
