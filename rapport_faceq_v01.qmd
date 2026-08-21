@@ -1,6 +1,6 @@
 ---
 subtitle: "Rapport statistique V0.1"
-cache: true
+cache: false
 ---
 :::{.panel-tabset}
 
@@ -20,8 +20,9 @@ library(labelled)
 library(epiDisplay)
 library(visdat)
 library(corrplot)
+library(scales)
 library(biostats)
-#library("psych")
+library(rstatix)
 library("colorspace")
 library("apyramid")
 library("FactoMineR")
@@ -31,10 +32,9 @@ library("readODS")
 library("ggsci")
 library("ggstats")
 library("plotly")
-#
 load("datas/faceq.RData")
 expx <- FALSE
-classeur <- "faceq_1907v3.ods"
+classeur <- "faceq_2008v1.ods"
 # if (exp){system(paste0("rm -f ",classeur))}
 #
 ptest <- list(all_continuous() ~ "t.test", all_categorical() ~ "chisq.test")
@@ -42,38 +42,6 @@ stt <- list(
   all_continuous() ~ "{mean} ± {sd}",
   all_categorical() ~ "{n}/{N} ({p}%)"
 )
-```
-
-```{r}
-#| label: numfpat
-
-zz <- pat |>
-  dplyr::select(a_symetrie_visage:d_parfaite_sante) |>
-  mutate(across(everything(), ~ as.numeric(str_sub(.x, 1, 1))))
-
-dld <- c(6,28,38,61,69,79)
-dlf <- c(15,37,42,68,78,82)
-nnq <- c("Apparence faciale", "Apparence du nez", "Apparence narines", 
-         "Fonction sociale", "Fonction psychologique", 
-         "Évenements indésirables nez"
-         )
-patn <- tibble(id = pat$id, jj = pat$moment)
-for (i in seq(1, length(dld))) {
-  dp <- zz[, (dld[i]):dlf[i]]
-  nom <- nnq[i]
-  ptn <- tibble(rowSums(dp, na.rm = TRUE))
-  names(ptn)[1] <- nom
-  patn <- cbind(patn, ptn)
-}
-# On ne garde que les paires complètes
-
-patnx <- 
-  patn |> 
-  group_by(id) |> 
-  dplyr::filter(n() == 2) |> 
-  ungroup() |> 
-  droplevels() |> 
-  arrange(id, jj)
 ```
 
 **Validation francophone du questionnaire FACE-Q pour la reconstruction/réhabilitation dans les suites d’un carcinome cutané nasal.**
@@ -94,10 +62,65 @@ Recherche non interventionnelle ne comportant aucun risque ni contrainte.
 
 <HR>
 
+```{r}
+#| label: scores
 
+# Patients
+spat <- NULL
+spat <- rbind(spat, c("SATISFACTION CONCERNANT L'APPARENCE GÉNÉRALE DU VISAGE", 6,15,4, "Apparence"))
+spat <- rbind(spat, c("SATISFACTION À L'ÉGARD DE LA PEAU",16,27,4, "Apparence"))
+spat <- rbind(spat, c("NIVEAU DE SATISFACTION – NEZ",28,37,4, "Apparence"))
+spat <- rbind(spat, c("NIVEAU DE SATISFACTION – NARINES",38,42,4, "Apparence"))
+spat <- rbind(spat, c(" RÉTABLISSEMENT – PREMIÈRES CONSÉQUENCES SUR LA QUALITÉ DE VIE",43,54,3, "Qualité de vie"))
+spat <- rbind(spat,c("SATISFACTION À L'ÉGARD DU RÉSULTAT OBTENU",55,60,4, "Qualité de vie"))
+spat <- rbind(spat, c("AISANCE SOCIALE",61,68,4, "Qualité de vie"))
+spat <- rbind(spat, c("BIEN-ÊTRE PSYCHOLOGIQUE",69,78,4, "Qualité de vie"))
+spat <- rbind(spat, c("EFFETS INDESIRABLES : NEZ",79,82,4, "Effets indésirables" ))
+spat <- rbind(spat,c("EFFETS INDESIRABLES : FRONT, SOURCILS, ET CUIR CHEVELU", 83,94,4, "Effets indésirables"))
+spat <- as_tibble(spat) |> 
+  mutate(across(2:4,~ as.numeric(.x)))
+names(spat) <- c("nom","deb","fin", "max","score")
+
+
+# Patients + témoins
+
+stem <- NULL
+stem <- rbind(stem, c("SATISFACTION CONCERNANT L'APPARENCE GÉNÉRALE DU VISAGE", 6,15,4, "Apparence"))
+stem <- rbind(stem, c("SATISFACTION À L'ÉGARD DE LA PEAU",16,27,4, "Apparence"))
+stem <- rbind(stem, c("NIVEAU DE SATISFACTION – NEZ",28,37,4, "Apparence"))
+stem <- rbind(stem, c("NIVEAU DE SATISFACTION – NARINES",38,42,4, "Apparence"))
+stem <- rbind(stem, c("AISANCE SOCIALE",43,50,4, "Qualité de vie"))
+stem <- rbind(stem, c("BIEN-ÊTRE PSYCHOLOGIQUE",51,60,4, "Qualité de vie"))
+stem <- as_tibble(stem) |> 
+  mutate(across(2:4,~ as.numeric(.x)))
+names(stem) <- c("nom","deb","fin", "max","score")
+
+```
+
+
+```{r}
+#| label: macros
+
+tabx <- function(zz){
+zz |> 
+   bold_labels() |> 
+  add_p(test = ptest) |>
+  bold_p(t = 0.05) |>
+  add_overall(col_label = "**Total**  \nN = {style_number(N)}") |> 
+     modify_header(label ~ " ") 
+}
+```
+
+<<<<<<< HEAD
 ::: {.callout-note}
 Pour toutes les variables binaires (oui/non), seul le code "`Oui`" est présenté dans la plupart des tableaux.
 :::
+=======
+Pour toutes les variables binaire (oui/non), seul le code "`Oui`" est présenté dans la plupart des tableaux.
+
+Pour les *échelles* & les *scores* les résultats ont été ramenés à une échelle de 0 à 100.
+
+>>>>>>> 2b05b3913b0db7368d8b73d87e5e486595070933
 # Validation de la population
 
 
@@ -152,7 +175,11 @@ vis_dat(tem[,c(3,4,6:96)],
     axis.text.x = element_text(angle = 70, vjust =0, hjust=0))
 ```
 
+<<<<<<< HEAD
 La qualité de remplissage des questionnaires est très bonne avec très peu de données manquantes. 
+=======
+La qualité de remplissage des questionnaires est très bonne avec très peu de données manquantes.
+>>>>>>> 2b05b3913b0db7368d8b73d87e5e486595070933
 
 
 # Description de la population
@@ -176,6 +203,46 @@ demog |>
 ```
 
 ```{r}
+#| label: fig-pyr
+#| fig-cap: Pyramide des âge (patients & témoins)
+
+tem |> 
+mutate(age = cut(age,
+  include.lowest = TRUE,
+  right = FALSE,
+  dig.lab = 3,
+  breaks = c(0, 30, 40, 50, 60, 70, 80, 100)
+)) |> 
+apyramid::age_pyramid(age, sexe,
+                      show_midpoint = FALSE) +  
+  theme_minimal() +
+    labs(
+    title = "Pyramide des âges (patients & témoins)",
+    x = "Âge",
+  ) +
+  theme_light() +
+  scale_y_continuous(labels = c("Féminin","Masculin"), breaks = c(-10,10)) +
+  scale_fill_discrete(c("pink","lightblue")) +
+  
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(
+      size = 12,
+      angle = 90,
+      vjust = .5
+    ),
+    axis.text.x = ,element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    legend.position = "none"
+  )
+```
+
+
+
+
+```{r}
 #| label: tbl-tumeur
 #| tbl-cap: Données tumeur
 
@@ -193,6 +260,7 @@ demog |>
   pexptabph(exp = expx, nomfich = classeur , nomsheet = "tumeur1", lg = TRUE)
 ```
 
+<<<<<<< HEAD
 # Fiabilité de la version francophone
 ## Test-Retest
 
@@ -244,54 +312,413 @@ tt |>
 # Cohérence interne
 
 On e test $\alpha$  de Cronbach qui est un indicateur de la cohérence interne d'un questionnaire. Il varie entre 0 et 1, avec des valeurs plus élevées indiquant une meilleure cohérence interne. En général, un $\alpha$ supérieur à 0,7 est considéré comme acceptable, tandis qu'un $\alpha$ supérieur à 0,8 est considéré comme bon. 
+=======
+
+# Test-Retest 
+
+# Patients : J0 vs J7
+
+```{r}
+#| label: numfpat
+
+zz <- pat |> 
+  mutate(across(everything(), ~ as.numeric(str_sub(.x, 1, 1))))
+
+
+patn <- tibble(id = pat$id, jj = pat$moment)
+for (i in 1:10) {
+  dp <- zz[, spat[[i,2]]: spat[[i,3]]]
+  nq <- spat[[i,3]] - spat[[i,2]] + 1
+  ptn <- tibble(rowSums(dp, na.rm = TRUE))
+  ptn <- 100*ptn/(nq*spat[[i,4]])
+  ptn <- ptn$'rowSums(dp, na.rm = TRUE)'
+  ptn <- replace_values(ptn,0 ~ NA)
+  ptn <- tibble(ptn)
+  names(ptn)[1] <- spat[i,1]
+  patn <- cbind(patn, ptn)
+}
+
+# estim_ncpPCA(patn[,3:12])
+ncp <- 1
+zz <- imputePCA(patn[,3:12], ncp = ncp, scale = TRUE)
+patn <- cbind(patn[,1:2], zz$completeObs)
+
+scorepat <- patn |> 
+  dplyr::select(id,jj) |> 
+  mutate(Apparence = rowSums(patn[,3:6])/4) |> 
+  mutate('Qualité de vie' = rowSums(patn[,7:10])/4) |> 
+  mutate('Effets secondaires' = rowSums(patn[,11:12])/2) |> 
+  dplyr::filter_out(Apparence <3 | 'Effets secondaires' <3)
+
+```
+
+```{r}
+#| label: tbl-echelles-pat
+#| tbl-cap: "Patients : J0 vs J7 (Échelles)"
+patn |> 
+  dplyr::select(!id) |> 
+  tbl_summary(by = "jj", 
+              missing = "no",
+              statistic = stt) |> 
+  tabx() |> 
+    gexptabph(exp = expx, nomfich = classeur , nomsheet = "echellespat")
+```
+
+```{r}
+#| label: fig-echelles-pat
+#| fig-cap: "Patients : J0 vs J7 (Échelles)"
+#| fig-asp: 2
+
+patn |> 
+  pivot_longer(cols = 3:12) |> 
+  ggplot() +
+  aes(x = name, y = value, fill = jj) +
+  geom_violin() +
+  coord_flip()+
+  scale_x_discrete(labels = label_wrap(30)) +
+    labs(
+    title = "Patients : J0 vs J7 (Échelles)",
+    y = "score / 100"
+  ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.position = "bottom"
+  )
+```
+
+
+```{r}
+#| label: tbl-scores-pat
+#| tbl-cap: "Patients : J0 vs J7 (scores)"
+scorepat |> 
+  dplyr::select(!id) |> 
+  tbl_summary(by = "jj", 
+              missing = "no",
+              statistic = stt) |> 
+  tabx() |> 
+    gexptabph(exp = expx, nomfich = classeur , nomsheet = "scorespat")
+```
+
+
+```{r}
+#| label: fig-scores-pat
+#| fig-cap: "Patients : J0 vs J7 (scores)"
+#| fig-asp: 1.5
+
+scorepat |> 
+  pivot_longer(cols = 3:5) |> 
+  ggplot() +
+  aes(x = name, y = value, fill = jj) +
+  geom_violin() +
+  coord_flip()+
+  scale_x_discrete(labels = label_wrap(30)) +
+    labs(
+    title = "Patients : J0 vs J7 (Échelles)",
+    y = "score / 100"
+  ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.position = "bottom"
+  )
+```
+
+Les items d'effets secondaires sont à 1 pour l'absence d'EI & à 5 pour le EI les plus gênants. Ils évoluent donc à l'inverse des items. [^ei]
+
+[^ei] À voir si on les garde comme ça ous is je les inverse.
+
+
+# Patients vs témoins
+
+```{r}
+#| label: numftem
+
+zz <- tem |> 
+  mutate(across(everything(), ~ as.numeric(str_sub(.x, 1, 1))))
+
+
+temn <- tibble(id = tem$id, jj = tem$groupe)
+for (i in 1:6) {
+  dp <- zz[, stem[[i,2]]: stem[[i,3]]]
+  nq <- spat[[i,3]] - spat[[i,2]] + 1
+  ptn <- tibble(rowSums(dp, na.rm = TRUE))
+  ptn <- 100*ptn/(nq*spat[[i,4]])
+  ptn <- ptn$'rowSums(dp, na.rm = TRUE)'
+  ptn <- replace_values(ptn,0 ~ NA)
+  ptn <- tibble(ptn)
+  names(ptn)[1] <- spat[i,1]
+  temn <- cbind(temn, ptn)
+}
+
+
+scoretem <- temn |> 
+  dplyr::select(id,jj) |> 
+  mutate('Apparence' = rowSums(temn[,3:6])/4) |> 
+  mutate('Qualité de vie' = rowSums(temn[,7:8])/2) 
+```
+
+```{r}
+#| label: tbl-echelle-tem
+#| tbl-cap: "Patients vs témoins (échelles)"
+
+temn |> 
+  dplyr::select(!id) |> 
+  tbl_summary(by = "jj", 
+              statistic = stt, 
+              missing = "no") |> 
+  tabx() |> 
+    gexptabph(exp = expx, nomfich = classeur , nomsheet = "echelletem")
+```
+
+```{r}
+#| label: fig-echelle-tem
+#| fig-cap: "Patients vs témoins (échelles)"
+#| fig-asp: 1.5
+
+temn |> 
+  pivot_longer(cols = 3:5) |> 
+  ggplot() +
+  aes(x = name, y = value, fill = jj) +
+  geom_violin() +
+  coord_flip()+
+  scale_x_discrete(labels = label_wrap(30)) +
+    labs(
+    title = "Patients vs témoins (échelles)",
+    y = "score / 100"
+  ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.position = "bottom"
+  )
+```
+
+```{r}
+#| label: tbl-scores-tem
+#| tbl-cap: "Patients vs témoins (scores)"
+scoretem |> 
+  dplyr::select(!id) |> 
+  tbl_summary(by = "jj", 
+               missing = "no",
+              statistic = stt) |> 
+  tabx() |> 
+    gexptabph(exp = expx, nomfich = classeur , nomsheet = "scorestem")
+```
+
+```{r}
+#| label: fig-scores-tem
+#| fig-cap: "Patients vs témoins (scores)"
+#| fig-asp: 1.5
+
+scoretem |> 
+  pivot_longer(cols = 3:4) |> 
+  ggplot() +
+  aes(x = name, y = value, fill = jj) +
+  geom_violin() +
+  coord_flip()+
+  scale_x_discrete(labels = label_wrap(30)) +
+    labs(
+    title = "Patients vs témoins (scores)",
+    y = "score / 100"
+  ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.position = "bottom"
+  )
+```
+
+
+Les témoins sont moins satisfaits de leur nez ou visage que les patients !
+
+
+# Cohérence interne
+
+## Test de Cronbach
+
+On e test $\alpha$  de Cronbach qui est un indicateur de la cohérence interne d'un questionnaire. En général, un $\alpha$ supérieur à 0,7 est considéré comme acceptable & un $\alpha$ supérieur à 0,8 est considéré comme bon. Ne pas oublier que la validité de ce test est très discutée. 
+>>>>>>> 2b05b3913b0db7368d8b73d87e5e486595070933
 
 Pour les patients le test n'est réalisé que sur les réponses à J0.
 
 ```{r}
 #| label: alpha-pat
 
-zz <- patnx |> 
+zz <- patn |> 
   dplyr::filter(jj == "J0") |> 
+<<<<<<< HEAD
   dplyr::select(c(3:ncol(patnx))) 
 zz <- psych::alpha(zz)
+=======
+  dplyr::select(c(3:12)) 
+zz <- psych::alpha(zz, check.keys=TRUE)
+>>>>>>> 2b05b3913b0db7368d8b73d87e5e486595070933
 mm <- round(as.numeric(zz$feldt[[2]]),2)
 bb <- round(as.numeric(zz$feldt[[1]]),2)
 hh <- round(as.numeric(zz$feldt[[3]]),2)
 al <- paste0( hh, " [", bb, " ; ", mm, "]")
 
+zz <- temn |> 
+  dplyr::filter(jj == "témoin") |> 
+  dplyr::select(c(3:8)) 
+zz <- psych::alpha(zz, check.keys=TRUE)
+mm <- round(as.numeric(zz$feldt[[2]]),2)
+bb <- round(as.numeric(zz$feldt[[1]]),2)
+hh <- round(as.numeric(zz$feldt[[3]]),2)
+at <- paste0( hh, " [", bb, " ; ", mm, "]")
+
 ```
 
-Les tests $\alpha$  de Cronbach donnent : 
+Les tests $\alpha$  de Cronbach donnent (avec l'intervalle de confiance à 95 %) : 
 
 - pour les patients : `r al`
-- pour les témoins : `r al`
+- pour les témoins : `r at`
 
 ## Validité du construit évaluée à l’aide de tests de corrélation
+
+On ne prend en compte que les réponses des patients (J0 ou J7).
 
 ```{r}
 #| label: prepa_facto
 
-zz <- patnx |> 
+zz <- patn |> 
  # dplyr::filter(jj == "J0") |> 
+<<<<<<< HEAD
   dplyr::select(!id) 
+=======
+  dplyr::select(!c(id, jj)) 
+>>>>>>> 2b05b3913b0db7368d8b73d87e5e486595070933
 
-rtt <- PCA(as.data.frame(zz),quali.sup = 1, graph = FALSE)
+rtt <- PCA(as.data.frame(zz),quali.sup = 1, graph = FALSE) 
 ```
 
 ```{r}
 #| label: fig-factoval
-#| fig-cap: Analyse factorielle - par cas
+#| fig-cap: Analyse factorielle - Échelles
 
 rtt |> 
+<<<<<<< HEAD
   fviz_pca_var(repel = TRUE, 
                col.var = "contrib",
                title = "Analyse factorielle - Échelles du FACE-Q nasal")
+=======
+  fviz_pca_var(retel = TRUE,
+               , labelsize = 2,
+               col.var = "contrib", 
+               title = "Analyse factorielle - Échelles")
+>>>>>>> 2b05b3913b0db7368d8b73d87e5e486595070933
 ```
 
+Plus la couleur est claire, plus la variable à de l'importance dans le calcul. 
+Les effets indésirables nez vont à l'opposé des autres variables ce qui est normal. Les premières conséquences sur la qualité de vie semble indépendantes des autres variables. 
 
-
-### Tests de corrélation
 
 ## Différence Minimum Cliniquement Intéressante
 
+<<<<<<< HEAD
 :::
+=======
+La DMCI ne peut calculée que par une approche purement mathématique en l’absence d'un critère fort de référence. Il n' y a aucun consensus sur les méthodes de calcul ou l'interprétation de ce calcul. On utilise ici la moitié de l'écart-type comme limite d'une différence clinique & la méthode par taille de l'effet (score *d de Cohens*) pour quantifier la valeur de cet effet, patient vs témoin. 
+
+La DMCI est calculée pour une population, pas pour un individu.
+
+```{r}
+#| label: tbl-DMCI
+#| tbl-cap: DMCI
+
+
+tabcc <- NULL
+# Apparence
+
+ec2 <- round(sd(scoretem$Apparence)/2,1)
+cc <- cohens_d(scoretem,Apparence~jj, ci = TRUE )
+ccapp <- bicph(cc$effsize,cc$conf.low,cc$conf.high)
+ll <- c("Apparence",ccapp,ec2)
+tabcc <- rbind(tabcc,ll)
+
+# Qdv
+aa <- scoretem
+names(aa)[4] <- "aa"
+ec2 <- round(sd(aa$aa)/2,1)
+cc <- cohens_d(aa,aa~jj, ci = TRUE )
+ccapp <- bicph(cc$effsize,cc$conf.low,cc$conf.high)
+ll <- c("Qualité de vie",ccapp,ec2)
+tabcc <- rbind(tabcc,ll)
+tabcc <- as_tibble(tabcc)
+
+names(tabcc) <- c("Scores", "d cohens ± IC95%", "DMCI")
+
+tabcc |> 
+  kbl() |> 
+  kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+```
+
+# Autres scores
+
+## NOSE
+
+
+```{r}
+#| label: prepa-nose
+
+nn = pat |> 
+dplyr::select(moment,x1_sensation_nez_plein:x5_respirer_exercice_physique)
+
+zz <- nn[,-1] |>  
+  mutate(across(everything(), ~ as.numeric(str_sub(.x, 1, 1))))
+zz <- imputePCA(zz, ncp = 1)
+zz <- zz$completeObs
+zzn <- rowSums(zz) *4
+nn2 <- cbind(nn[,1],zzn)
+
+
+
+```
+
+```{r}
+#| label: fig-nose
+#| fig-cap: score NOSE
+
+nn |> 
+  dplyr::select(!moment) |> 
+  gglikert(y_reverse = FALSE) +
+   guides(color = guide_legend(nrow = 2))
+```
+
+```{r}
+#| label: tbl-nose
+#| tbl-cap: score NOSE
+
+nn |> 
+  dplyr::select(!moment) |> 
+  tbl_likert()
+
+```
+
+```{r}
+
+
+```
+
+

@@ -120,6 +120,9 @@ L'acceptabilité sera jugée sur la qualité du remplissage en particulier le no
 
 ### Test-Retest
 
+
+
+
 La reproductibilité sera évaluée par des tests de corrélation réalisés pour les échelles du score \gls{faceq} entre les questionnaires remplis au moment de l'inclusion & ceux remplis sept jours plus tard. Les différences échelle par échelle seront présentées par des diagrammes de Bland & Altman (@fig-bland sur données fictives).
 
 ```{r}
