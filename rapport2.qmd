@@ -1,0 +1,1036 @@
+---
+subtitle: "Rapport statistique V0.2" 
+cache: false
+---
+:::{.panel-tabset}
+# Généralités
+
+::: {.callout-important appearance="simple"}
+**Validation francophone du questionnaire FACE-Q pour la
+reconstruction/réhabilitation dans les suites d’un carcinome cutané nasal**
+:::
+
+<hr>
+
+**Investigateur Coordonnateur** : Khaled AL TABAA\
+Service d’ORL — Hôpital NOVO (Site de Pontoise)
+
+**Chef de projet** : Mathilde WLODARCZYK\
+USRC — Hôpital NOVO
+
+**Méthodologiste** : Chrystelle VIDAL\
+GIRCI  Île de France 
+
+**Data-manager** : Nathanaël CHARRIER\
+USRC — Hôpital NOVO
+
+**Statisticien** : Philippe MICHEL\
+USRC — Hôpital NOVO
+
+<hr>
+
+Recherche non interventionnelle ne comportant aucun risque ni contrainte
+
+```{r}
+#| label: setup
+rm(list = ls())
+#
+library(baseph)
+library(tidyverse)
+library(gtsummary)
+library(kableExtra)
+library(psych)
+library(labelled)
+library(visdat)
+library(corrplot)
+library(scales)
+library(biostats)
+library(rstatix)
+library(readODS)
+library("colorspace")
+library("apyramid")
+library("FactoMineR")
+library("factoextra")
+library("missMDA")
+library("readODS")
+library("ggsci")
+library("ggstats")
+#
+load("datas/faceq.RData")
+expx <-  FALSE
+classeur <- "faceq_2008v1.ods"
+#
+ptest <- list(all_continuous() ~ "wilcox.test", all_categorical() ~ "chisq.test")
+stt <- list(
+  all_continuous() ~ "{median} ({p25}, {p75})",
+  all_categorical() ~ "{n}/{N} ({p}%)"
+)
+#
+theme_gtsummary_language(language = "fr", decimal.mark = ",")
+options(OutDec = ",")
+#
+```
+
+```{r}
+#| label: scores
+# Patients
+spat <- NULL
+spat <- rbind(spat, c("SATISFACTION CONCERNANT L'APPARENCE GÉNÉRALE DU VISAGE", 6,15,4, "Apparence"))
+spat <- rbind(spat, c("SATISFACTION À L'ÉGARD DE LA PEAU",16,27,4, "Apparence"))
+spat <- rbind(spat, c("NIVEAU DE SATISFACTION – NEZ",28,37,4, "Apparence"))
+spat <- rbind(spat, c("NIVEAU DE SATISFACTION – NARINES",38,42,4, "Apparence"))
+spat <- rbind(spat, c(" RÉTABLISSEMENT – PREMIÈRES CONSÉQUENCES SUR LA QUALITÉ DE VIE",43,54,3, "Qualité de vie"))
+spat <- rbind(spat,c("SATISFACTION À L'ÉGARD DU RÉSULTAT OBTENU",55,60,4, "Qualité de vie"))
+spat <- rbind(spat, c("AISANCE SOCIALE",61,68,4, "Qualité de vie"))
+spat <- rbind(spat, c("BIEN-ÊTRE PSYCHOLOGIQUE",69,78,4, "Qualité de vie"))
+spat <- rbind(spat, c("EFFETS INDESIRABLES : NEZ",79,82,4, "Effets indésirables" ))
+spat <- rbind(spat,c("EFFETS INDESIRABLES : FRONT, SOURCILS, ET CUIR CHEVELU", 83,94,4, "Effets indésirables"))
+spat <- as_tibble(spat) |>
+  mutate(across(2:4,~ as.numeric(.x)))
+names(spat) <- c("nom","deb","fin", "max","score")
+# Patients + témoins
+stem <- NULL
+stem <- rbind(stem, c("SATISFACTION CONCERNANT L'APPARENCE GÉNÉRALE DU VISAGE", 6,15,4, "Apparence"))
+stem <- rbind(stem, c("SATISFACTION À L'ÉGARD DE LA PEAU",16,27,4, "Apparence"))
+stem <- rbind(stem, c("NIVEAU DE SATISFACTION – NEZ",28,37,4, "Apparence"))
+stem <- rbind(stem, c("NIVEAU DE SATISFACTION – NARINES",38,42,4, "Apparence"))
+stem <- rbind(stem, c("AISANCE SOCIALE",43,50,4, "Qualité de vie"))
+stem <- rbind(stem, c("BIEN-ÊTRE PSYCHOLOGIQUE",51,60,4, "Qualité de vie"))
+stem <- as_tibble(stem) |>
+  mutate(across(2:4,~ as.numeric(.x)))
+names(stem) <- c("nom","deb","fin", "max","score")
+```
+
+```{r}
+#| label: numfpat
+zz <- pat |>
+mutate(across(everything(), ~ as.numeric(str_sub(.x, 1, 1))))
+patn <- tibble(id = pat$id, jj = pat$moment)
+for (i in 1:10) {
+dp <- zz[, spat[[i,2]]: spat[[i,3]]]
+nq <- spat[[i,3]] - spat[[i,2]] + 1
+ptn <- tibble(rowSums(dp, na.rm = TRUE))
+ptn <- 100*ptn/(nq*spat[[i,4]])
+ptn <- ptn$'rowSums(dp, na.rm = TRUE)'
+ptn <- replace_values(ptn,0 ~ NA)
+ptn <- tibble(ptn)
+names(ptn)[1] <- spat[i,1]
+patn <- cbind(patn, ptn)
+}
+patn <- patn |>
+mutate(age = pat$age)
+# Imputation des données manquantes
+zz <- as.data.frame(dplyr::select(patn,!c(id,jj)))
+nn <- estim_ncpPCA(zz)
+zz <- imputePCA(zz,ncp = nn$ncp)
+patn <- as_tibble(cbind(patn[,1:2],zz$completeObs))
+# Calcul des scores
+scorepat <- patn |>
+dplyr::select(id,jj) |>
+mutate(Apparence = rowSums(patn[,3:6])/4) |>
+mutate('Qualité de vie' = rowSums(patn[,7:10])/4) |>
+mutate('Effets secondaires' = rowSums(patn[,11:12])/2) |>
+dplyr::filter_out(Apparence <3 | 'Effets secondaires' <3) |>
+mutate(age = pat$age)
+patn0 <- patn |>
+  dplyr::filter(jj == "J0")
+scorepat0<- scorepat |>
+  dplyr::filter(jj == "J0")
+```
+
+```{r}
+#| label: numftem
+zz <- tem |>
+mutate(across(everything(), ~ as.numeric(str_sub(.x, 1, 1))))
+temn <- tibble(id = tem$id, jj = tem$groupe, age = tem$age)
+for (i in 1:6) {
+dp <- zz[, stem[[i,2]]: stem[[i,3]]]
+nq <- spat[[i,3]] - spat[[i,2]] + 1
+ptn <- tibble(rowSums(dp, na.rm = TRUE))
+ptn <- 100*ptn/(nq*spat[[i,4]])
+ptn <- ptn$'rowSums(dp, na.rm = TRUE)'
+ptn <- replace_values(ptn,0 ~ NA)
+ptn <- tibble(ptn)
+names(ptn)[1] <- spat[i,1]
+temn <- cbind(temn, ptn)
+}
+# Imputation des données manquantes
+zz <- as.data.frame(dplyr::select(temn,!c(id,jj)))
+nn <- estim_ncpPCA(zz)
+zz <- imputePCA(zz,ncp = nn$ncp)
+temn <- as_tibble(cbind(temn[,1:2],zz$completeObs)) |>
+## Réordonnancement de temn$jj
+mutate(jj = fct_relevel(jj,
+"témoin", "patient"
+))
+# Noms
+var_label(temn) <- c("id","Groupe","Âge",names(temn)[4:9])
+names(temn) <- c("id","jj","age", paste0("Q",1:6))
+# Calcul des scores
+scoretem <- temn |>
+dplyr::select(id,jj,age) |>
+mutate('Apparence' = rowSums(temn[,3:6])/4) |>
+mutate('Qualité de vie' = rowSums(temn[,7:8])/2)
+# témoins + patients
+zz <- scorepat |>
+  dplyr::filter(jj == "J0") |>
+  mutate(jj = rep("Patient",82)) |>
+  dplyr::select(!c('Effets secondaires'))
+scorept <- rbind(zz,scoretem) |>
+  dplyr::select(!id)
+```
+```{r}
+#| label: macros
+tabx <- function(zz){
+zz |>
+   bold_labels() |>
+  add_p(test = ptest) |>
+  bold_p(t = 0.05) |>
+  add_overall(col_label = "**Total**  \nN = {style_number(N)}") |>
+     modify_header(label ~ " ")
+}
+# Digrammes de Bland-Altmann
+blandph <- function(i){
+nnp <- names(scorepat)[i]
+patg <- scorepat |>
+  group_by(id) |>
+dplyr::filter(n() == 2) |>
+ungroup() |>
+dplyr::select(id, jj, i) |>
+rename(q = nnp)
+ss <- sd(patg$q)
+patg |>
+pivot_wider(names_from = jj, values_from = q) |>
+mutate(dif = J7-J0) |>
+ggplot() +
+aes( x= J0, y = dif) |>
+geom_jitter() +
+geom_hline(yintercept =0,
+linetype = 2,
+color = "grey60") +
+geom_hline(yintercept =ss,
+linetype = 4,
+color = "grey60") +
+geom_hline(yintercept = 0- ss,
+linetype = 4,
+color = "grey60") +
+theme_light() +
+labs(
+title = names(scorepat)[i],
+subtitle = "Différence J7 -J0 vs mesure à J0",
+x = "J0",
+y = "J7-J0",
+caption = "limites à ± 1 écart-type"
+) +
+theme_light() +
+theme(
+plot.title = element_text(size = 14, face = "bold"),
+plot.subtitle = element_text(size = 12),
+axis.title.x = element_text(size = 12),
+axis.title.y = element_text(
+size = 12,
+angle = 90,
+vjust = .5
+),
+axis.text.x = ,element_text(size = 14),
+axis.text.y = element_text(size = 14),
+legend.position = "none"
+)
+}
+```
+Pour toutes les variables binaire (oui/non), seul le code "`Oui`" est présenté
+dans la plupart des tableaux.
+
+Pour les *échelles* & les *scores* les résultats ont été ramenés à une échelle
+de 0 à 100.
+
+# Validation de la population
+
+L'échantillon comporte `r nrow(demog)` cas dans le tableau commun mais `r
+nrow(pat)` patients & `r nrow(tem)` témoins dans les tableaux ad hoc.
+
+## Données manquantes
+
+```{r}
+#| label: fig-manq_demog
+#| fig-cap: Données manquantes - Démographie
+#| fig-asp: 1
+vis_dat(demog[,c(4:16,18:28,39,40,44:51)],
+         sort_type = FALSE,
+          warn_large_data = FALSE) +
+  labs(title = "Données manquantes - Démographie") +
+    theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 70, vjust =0, hjust=0)
+  )
+```
+```{r}
+#| label: fig-manq_pat
+#| fig-cap: Données manquantes - Patients
+#| fig-asp: 1
+vis_dat(pat[,c(3:135)],
+         sort_type = FALSE,
+          warn_large_data = FALSE) +
+  labs(title = "Données manquantes - Patients") +
+    theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 70, vjust =0, hjust=0)
+  )
+```
+
+```{r}
+#| label: fig-manq_tem
+#| fig-cap: Données manquantes - Témoins
+#| fig-asp: 1
+vis_dat(tem[,c(3,4,6:96)],
+         sort_type = FALSE,
+          warn_large_data = FALSE) +
+  labs(title = "Données manquantes - Témoins") +
+    theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 70, vjust =0, hjust=0))
+```
+
+La qualité de remplissage des questionnaires est très bonne avec très peu de
+données manquantes.
+
+# Description de la population
+
+```{r}
+#| label: tbl-clinique
+#| tbl-cap: Données cliniques
+demog |>
+  dplyr::select(groupe, age:corticoides) |>
+  tbl_summary(missing = "no",
+              by = "groupe",
+              statistic = stt,
+              sort = all_categorical() ~ "frequency") |>
+   bold_labels() |>
+  add_p(test = ptest) |>
+  bold_p(t = 0.05) |>
+  add_overall() |>
+     modify_header(label ~ " ") |>
+  pexptabph(exp = expx, nomfich = classeur , nomsheet = "demog1", lg = TRUE)
+```
+```{r}
+#| label: fig-pyr
+#| fig-cap: Pyramide des âge (patients & témoins)
+tem |>
+mutate(age = cut(age,
+  include.lowest = TRUE,
+  right = FALSE,
+  dig.lab = 3,
+  breaks = c(0, 30, 40, 50, 60, 70, 80, 100)
+)) |>
+apyramid::age_pyramid(age, sexe,
+                      show_midpoint = FALSE) +
+  theme_minimal() +
+    labs(
+    title = "Pyramide des âges (patients & témoins)",
+    x = "Âge",
+  ) +
+  theme_light() +
+  scale_y_continuous(labels = c("Féminin","Masculin"), breaks = c(-10,10)) +
+  scale_fill_discrete(c("pink","lightblue")) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(
+      size = 12,
+      angle = 90,
+      vjust = .5
+    ),
+    axis.text.x = ,element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    legend.position = "none"
+  )
+```
+
+```{r}
+#| label: tbl-tumeur
+#| tbl-cap: Données tumeur
+zz <- demog |>
+  dplyr::filter(groupe == "Patient") |>
+  dplyr::select(histo:nb_sous_unites) |>
+  tbl_summary(missing = "no",
+              statistic = stt,
+              sort = histo ~ "frequency") |>
+   bold_labels() |>
+     modify_header(label ~ " ")
+  zz |>
+as_kable_extra(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+kable_styling(latex_options = c("scale_down", "repeat_header")) |>
+footnote(general = "Uniquement les patients")
+if(expx){
+zz |>
+as_tibble() |>
+write_ods(path = classeur, sheet = "tumeur", append = TRUE)
+}
+```
+
+```{r}
+#| label: tbl-chir
+#| tbl-cap: Intervention chirurgicale
+zz <- demog |>
+  dplyr::filter(groupe == "Patient") |>
+  mutate(frontal = ifelse(nature_ntervention %in% 
+                            c("Lambeau de schmid-Meyer" ,"Lambeau frontal"),
+                          "yes", "no")) |>
+  dplyr::select(exerese_chirurgicale_transfixiante:nature_ntervention,nb_tps_op) |>
+  tbl_summary(missing = "no",
+              statistic = stt,
+              sort = everything() ~ "frequency") |>
+   bold_labels() |>
+     modify_header(label ~ " ")
+  zz |>
+as_kable_extra(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+kable_styling(latex_options = c("scale_down", "repeat_header")) |>
+footnote(general = "Uniquement les patients")
+if(expx){
+zz |>
+as_tibble() |>
+write_ods(path = classeur, sheet = "chir", append = TRUE)
+
+}
+```
+
+# Objectif principal
+
+## Acceptabilité
+
+```{r}
+#| label: tbl-accept
+#| tbl-cap: Acceptabilité
+
+patf <- pat |> 
+  dplyr::select(a_symetrie_visage:l_sensations_cicatrices_front)
+zz <- drop_na(patf)
+nna <- paste0(nrow(patf)-nrow(zz),"/",nrow(patf)," (",round(100*(nrow(patf)-nrow(zz))/nrow(patf),1),"%)")
+llp <- c("patients",nna)
+
+temf <- tem |> 
+  dplyr::select(a_symetrie_visage:j_senti_tres_bien)
+zz <- drop_na(temf)
+nna <- paste0(nrow(temf)-nrow(zz),"/",nrow(temf)," (",round(100*(nrow(temf)-nrow(zz))/nrow(temf),1),"%)")
+llt <- c("témoin",nna)
+
+zz <- as_tibble(rbind(llp,llt)) |> 
+  setNames(c("Groupe","Questionnaires incomplets/total (%)")) 
+  
+
+zz |> 
+  kbl(escape = TRUE) |> 
+  kable_styling(latex_options = c("scale_down", "repeat_header")) 
+
+if(expx){
+zz |>
+as_tibble() |>
+write_ods(path = classeur, sheet = "accept", append = TRUE)
+}
+```
+
+
+## Fiabilité
+
+### Patients : J0 vs J7 (test-retest)
+
+```{r}
+#| label: tbl-echelles-pat
+#| tbl-cap: "Patients : J0 vs J7 (Échelles)"
+patn |>
+group_by(id) |>
+dplyr::filter(n() == 2) |>
+ungroup() |>
+dplyr::select(!c(age)) |>
+tbl_summary(by = "jj",
+include = !id,
+missing = "no",
+statistic = stt) |>
+modify_header(label ~ " ") |>
+add_p(test = list(
+everything() ~ "paired.wilcox.test"),
+group = id) |>
+bold_p(t = 0.05) |>
+gexptabph(exp = expx, nomfich = classeur , nomsheet = "scorespat")
+```
+
+```{r}
+#| label: fig-echelles-pat
+#| fig-cap: "Patients : J0 vs J7 (Échelles)"
+#| fig-asp: 2
+patn |>
+  pivot_longer(cols = 3:12) |>
+  ggplot() +
+  aes(x = name, y = value, fill = jj) +
+  geom_violin() +
+  coord_flip()+
+  scale_x_discrete(labels = label_wrap(30)) +
+    labs(
+    title = "Patients : J0 vs J7 (Échelles)",
+    y = "score / 100"
+  ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.position = "bottom"
+  ) +
+   guides(fill = guide_legend(nrow = 2))
+```
+```{r}
+#| label: tbl-scores-pat
+#| tbl-cap: "Patients : J0 vs J7 (scores)"
+scorepat |>
+group_by(id) |>
+dplyr::filter(n() == 2) |>
+ungroup() |>
+dplyr::select(!c(age)) |>
+tbl_summary(by = "jj",
+include = !id,
+missing = "no",
+statistic = stt) |>
+modify_header(label ~ " ") |>
+add_p(test = list(
+everything() ~ "paired.wilcox.test"),
+group = id) |>
+bold_p(t = 0.05) |>
+gexptabph(exp = expx, nomfich = classeur , nomsheet = "scorespat")
+```
+
+```{r}
+#| label: fig-scores-pat
+#| fig-cap: "Patients : J0 vs J7 (scores)"
+#| fig-asp: 1.5
+zz <- scorepat |>
+  pivot_longer(cols = 3:5) |>
+  ggplot() +
+  aes(x = name, y = value, fill = jj) +
+  geom_violin() +
+  coord_flip()+
+  scale_x_discrete(labels = label_wrap(30)) +
+    labs(
+    title = "Patients : J0 vs J7 (Scores)",
+    y = "score / 100"
+  ) +
+  theme_light() +
+    scale_y_continuous(limits = c(0, 130)) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.position = "bottom"
+  ) +
+   guides(fill = guide_legend(nrow = 2))
+zz <-   figp(zz,1.1,0.9,110, 0.15, h=9)
+ zz <-  figp(zz,2.1,1.9,110, 0.15, h=9)
+ figp(zz,3.1,2.9,105, 0.95, h=9)
+```
+Les items d'effets secondaires sont à 1 pour l'absence d'EI & à 5 pour le EI les
+plus gênants. Ils évoluent donc à l'inverse des items.
+
+## Différences J7-J0
+
+```{r}
+#| label: fig-bland1
+#| fig-cap: "Apparence"
+blandph(3)
+```
+```{r}
+#| label: fig-bland2
+#| fig-cap: "Qualité de vie"
+blandph(4)
+```
+```{r}
+#| label: fig-bland3
+#| fig-cap: "Effets secondaires"
+blandph(5)
+```
+### Patients vs témoins
+```{r}
+#| label: tbl-echelle-tem
+#| tbl-cap: "Patients vs témoins (échelles)"
+#| eval: false
+zz <- |>
+dplyr::select(!id) |>
+tbl_summary(by = jj,
+) |>
+add_p(test = list(
+everything() ~ "ancova"),adj.vars=age) |>
+bold_p(t = 0.05) |>
+modify_header(label ~ " ")
+zz |>
+as_kable_extra(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+kable_styling(latex_options = c("scale_down", "repeat_header")) |>
+footnote(general = "Ajustement sur l'âge")
+if(expx){
+zz |>
+as_tibble() |>
+write_ods(path = classeur, sheet = "echelle-tem", append = TRUE)
+}
+```
+
+```{r}
+#| label: fig-echelle-tem
+#| fig-cap: "Patients vs témoins (échelles)"
+#| eval: false
+z <- scoretem |>
+dplyr::select(!id) |>
+tbl_summary(by = jj,
+include = !age) |>
+add_p(test = list(
+everything() ~ "ancova"),adj.vars=age) |>
+bold_p(t = 0.05) |>
+modify_header(label ~ " ")
+zz |>
+as_kable_extra(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+kable_styling(latex_options = c("scale_down", "repeat_header")) |>
+footnote(general = "Ajustement sur l'âge")
+if(expx){
+zz |>
+as_tibble() |>
+write_ods(path = classeur, sheet = "scores-tem", append = TRUE)
+```
+
+```{r}
+#| label: tbl-scores-tem
+#| tbl-cap: "Patients vs témoins (scores)"
+zz <- scorept |>
+tbl_summary(by = jj,
+include = !age) |>
+add_p(test = list(
+everything() ~ "ancova"),adj.vars = age) |>
+bold_p(t = 0.05) |>
+modify_header(label ~ " ")
+zz |>
+as_kable_extra(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+kable_styling(latex_options = c("scale_down", "repeat_header")) |>
+footnote(general = "Ajustement sur l'âge")
+if(expx){
+zz |>
+as_tibble() |>
+write_ods(path = classeur, sheet = "scores-tem", append = TRUE)
+}
+```
+```{r}
+#| label: fig-scores-tem
+#| fig-cap: "Patients vs témoins (scores)"
+#| fig-asp: 1.5
+zz <- scorept |>
+  pivot_longer(cols = 2:3) |>
+  ggplot() +
+  aes(x = name, y = value, fill = jj) +
+  geom_violin() +
+  coord_flip()+
+  scale_x_discrete(labels = label_wrap(30)) +
+    labs(
+    title = "Patients vs témoins (scores)",
+    y = "score / 100"
+  ) +
+  scale_y_continuous(limits = c(0, 130)) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.title = element_blank(),
+    legend.position = "bottom"
+  )
+zz <- figp(zz,1.1,0.9,110, 0.001,h =12)
+  figp(zz,2.1,1.9,110, 0.3, h=12)
+```
+
+Les témoins sont moins satisfaits de leur nez ou visage que les patients !
+
+# Cohérence interne
+
+## Test de Cronbach
+
+On e test $\alpha$ de Cronbach qui est un indicateur de la cohérence interne
+d'un questionnaire. En général, un $\alpha$ supérieur à 0,7 est considéré comme
+acceptable & un $\alpha$ supérieur à 0,8 est considéré comme bon. Ne pas oublier
+que la validité de ce test est très discutée.
+
+Pour les patients le test n'est réalisé que sur les réponses à J0.
+
+```{r}
+#| label: alpha-pat
+zz <- patn |>
+  dplyr::filter(jj == "J0") |>
+  dplyr::select(c(3:12))
+zz <- psych::alpha(zz, check.keys=TRUE)
+mm <- round(as.numeric(zz$feldt[[2]]),2)
+bb <- round(as.numeric(zz$feldt[[1]]),2)
+hh <- round(as.numeric(zz$feldt[[3]]),2)
+al <- paste0( hh, " [", bb, " ; ", mm, "]")
+zz <- temn |>
+  dplyr::filter(jj == "témoin") |>
+  dplyr::select(c(3:8))
+zz <- psych::alpha(zz, check.keys=TRUE)
+mm <- round(as.numeric(zz$feldt[[2]]),2)
+bb <- round(as.numeric(zz$feldt[[1]]),2)
+hh <- round(as.numeric(zz$feldt[[3]]),2)
+at <- paste0( hh, " [", bb, " ; ", mm, "]")
+```
+
+Les tests $\alpha$ de Cronbach donnent (avec l'intervalle de confiance à 95 %) :
+
+- pour les patients : `r al`
+- pour les témoins : `r at`
+
+## Validité du construit évaluée à l’aide de tests de corrélation
+
+On ne prend en compte que les réponses des patients (J0).
+
+## Corrélations 2 à 2
+```{r}
+#| label: fig-cor2a2
+#| fig-cap: Corrélations 2 à 2
+#| fig-asp: 1.5
+zz <- patn |>
+  dplyr::filter(jj == "J0") |>
+  dplyr::select(!c(id,jj,age))
+zzc <- cor(zz)
+corrplot(zzc,
+         type = "lower",
+         method = "number",
+         diag= FALSE,
+         tl.cex= 0.5,
+        # number.cex =3,
+         title = "")
+```
+
+Les échelles " RÉTABLISSEMENT – PREMIÈRES CONSÉQUENCES SUR LA QUALITÉ DE VIE" &
+"EFFETS INDESIRABLES : FRONT, SOURCILS, ET CUIR CHEVELU"  sont peu corrélées
+avec les autres.
+
+### Lambeau frontal
+
+On vérifie sui le fait d'aoir eu un labeau frontal modifie la réponse à la
+question sur les effets indésirables frontaux.
+
+
+
+## Analyse factorielle
+
+```{r}
+#| label: prepa_facto
+zz <- patn0 |>
+  dplyr::select(!c(id, jj))
+rtt <- PCA(as.data.frame(zz), graph = FALSE)
+```
+```{r}
+#| label: fig-factoval-pat
+#| fig-cap: Analyse factorielle - Échelles du FACE-Q nasal
+rtt |>
+  fviz_pca_var(retel = TRUE,
+               labelsize = 3,
+               col.var = "contrib",
+               title = "Analyse factorielle - Échelles",
+               select.var = list(contrib = 8))
+```
+
+Cette figure représente au mieux les corrélations entre les échelles du score
+FACE-Q. Les axes n'ont pas de signification propre, ne sont calculés que pour
+avoir la meilleure représentation possible. La longueur des flèche montre la
+qualité de la corrélation de la variable avec les autres. Plus la couleur est
+claire, plus la variable à de l'importance dans le calcul. La variable ` semble
+indépendante des autres variables ce qui confirme le résultat des corrélations 2
+à 2.
+
+## Différence Minimum Cliniquement Intéressante
+
+La DMCI ne peut calculée que par une approche purement mathématique en l’absence
+d'un critère fort de référence. Il n' y a aucun consensus sur les méthodes de
+calcul ou l'interprétation de ce calcul. On utilise ici la moitié de
+l'écart-type comme limite d'une différence clinique & la méthode par taille de
+l'effet (score *d de Cohens*) pour quantifier la valeur de cet effet, patient vs
+témoin (réponses moyennes standardisées).
+La DMCI est calculée pour une population, pas pour un individu.
+
+```{r}
+#| label: tbl-DMCI
+#| tbl-cap: DMCI
+tabcc <- NULL
+# Apparence
+ec2 <- round(sd(scorept$Apparence)/2,1)
+cc <- cohens_d(scorept,Apparence~jj, ci = TRUE, 
+               hedges.correction = TRUE)
+ccapp <- bicph(cc$effsize,cc$conf.low,cc$conf.high)
+ll <- c("Apparence",ccapp,ec2)
+tabcc <- rbind(tabcc,ll)
+# Qdv
+aa <- scorept
+names(aa)[3] <- "aa"
+ec2 <- round(sd(aa$aa, na.rm = TRUE)/2,1)
+cc <- cohens_d(aa,aa~jj, ci = TRUE ,
+               hedges.correction = TRUE)
+ccapp <- bicph(cc$effsize,cc$conf.low,cc$conf.high)
+ll <- c("Qualité de vie",ccapp,ec2)
+tabcc <- rbind(tabcc,ll)
+tabcc <- as_tibble(tabcc)
+names(tabcc) <- c("Scores", "d cohens ± IC95%", "DMCI")
+tabcc |>
+kbl(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+kable_styling(latex_options = c("scale_down", "repeat_header", "hold_position"))
+  if(expx){
+    tabcc |>
+write_ods(path = classeur, sheet = "dcim", append = TRUE)
+}
+```
+
+Il faudrait donc environ 6 points (sur 100) d'écart entre deux populations sur
+le score `Apparence` & 9 /100 pour le score `qualité de vie` pour dire que cette
+différence a un sens clinique.
+
+# Objectifs secondaires
+
+## NOSE
+
+```{r}
+#| label: fig-nose
+#| fig-cap: score NOSE
+nn <- pat |>
+ dplyr::filter(moment == "J0") |>
+dplyr::select(x1_sensation_nez_plein:x5_respirer_exercice_physique) |>
+  mutate(across(starts_with("X"),~fct_relevel(.x,
+    "Pas de problème", "Problème très modéré", "Problème modéré",
+    "Problème peu sévère", "Problème sévère"
+  )))
+nn |>
+  gglikert(y_reverse = FALSE,
+           y_label_wrap = 40) +
+   guides(color = guide_legend(nrow = 2))
+```
+```{r}
+#| label: tbl-nose
+#| tbl-cap: score NOSE
+nn |>
+  tbl_likert() |>
+  modify_header(label ~ " ") |>
+      gexptabph(exp = expx, nomfich = classeur , nomsheet = "nose")
+```
+
+```{r}
+#| label: tbl-nose-cor
+#| tbl-cap: corrélation score NOSE vs scores du FACE-Q
+nnt <- nn |>
+mutate(across(starts_with("X"),~as.numeric(.x)))
+nosen <- rowSums(nnt[,-1])*4
+faceq <- scorepat |>
+dplyr::filter(jj == "J0")
+tabc <- NULL
+#
+for (i in 3:5){
+nf <- names(scorepat)[i]
+nezn <- faceq |>
+dplyr::select(all_of(nf))
+nezn <- as.vector(nezn[,1])
+zz <- cor.test(nezn[[1]],nosen)
+corz <- bicph(zz$estimate,zz$conf.int[[1]],zz$conf.int[[2]], pc = 2)
+ll <- c(nf,corz)
+tabc <- rbind(tabc,ll)
+}
+zz <- as_tibble(tabc) |>
+rename("Scores du FACE-Q nasal" = V1, "corrélation ± iC 95" = V2)
+zz |>
+kbl(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+kable_styling(latex_options = c("scale_down", "repeat_header", "hold_position"))
+  if(expx){
+    zz |>
+write_ods(path = classeur, sheet = "nose corr", append = TRUE)
+}
+```
+
+Les coefficients de corrélation `r` entre les scores du FACE-Q & le score NOSE
+sont  médiocres.
+
+```{r}
+#| label: fig-cor-nose
+#| fig-cap: score NOSE & FACE-Q
+zz <- faceq |>
+  dplyr::select(3:5) |>
+  mutate(NOSE = nosen)
+zzc <- cor(zz, use  = "pairwise.complete.obs")
+corrplot(
+  zzc,
+  type = "lower",
+  method = "number",
+  diag = FALSE,
+  tl.cex = 1,
+  # number.cex =3,
+  title = ""
+)
+```
+
+## SF36
+
+```{r}
+#| label: import-sf36
+sfp <- read_ods("datas/sf36pat.ods") |>
+  mutate(jj = patn$jj) |>
+    dplyr::filter(jj == "J0")
+# Imputation
+zz <- imputePCA(sfp[,2:12], ncp = 2)
+sfp <- as_tibble(cbind(sfp[,1],sfp[13],zz$completeObs))
+sfpat <- scorepat0 |>
+  left_join(sfp, by = "id") |>
+  dplyr::select(!c(jj.y,jj.x))
+sfp <- read_ods("datas/sf36tem.ods")
+sftem <- scoretem |>
+  left_join(sfp, by = "id") |>
+  dplyr::select(!c(jj,age))
+sftot <- sfpat |>
+  dplyr::select(!4) |>
+  bind_rows(sftem)
+```
+
+### Patients
+
+#### Corrélations 2 à 2
+
+```{r}
+#| label: fig-cor-sfp
+#| fig-cap: score NOSE & FACE-Q
+zz <- sfpat |>
+  dplyr::select(2:4,15,16)
+zzc <- cor(zz, use  = "pairwise.complete.obs")
+corrplot(
+  zzc,
+  type = "lower",
+  method = "number",
+  diag = FALSE,
+  tl.cex = 1,
+  # number.cex =3,
+  title = ""
+)
+```
+
+Le score `physique` du SF36 est très mal corrélé avec les scores du FACE-Q
+nasal. Les corrélations du score `mental` du SF36 vont de mauvaises à médiocres.
+La moins mauvaise est la corrélation avec le score `Qualité de vie` du FACE-Q
+nasal ce qui est plutôt rassurant.
+
+#### Analyse factorielle
+
+```{r}
+#| label: prepa_facto-sfp
+zz <- sfpat |>
+ dplyr::select(2:4,15,16)
+rtt <- PCA(as.data.frame(zz), graph = FALSE)
+```
+
+```{r}
+#| label: fig-factoval-sfpat
+#| fig-cap: Analyse factorielle - Échelles du FACE-Q nasal
+rtt |>
+  fviz_pca_var(retel = TRUE,
+               labelsize = 3,
+               col.var = "contrib",
+               title = "SF36 & Échelles du FACE-Q nasal (patients J0)",
+               subtitle = "Analyse factorielle",
+               select.var = list(contrib = 8))
+```
+
+### Témoins
+
+#### Corrélations 2 à 2
+
+```{r}
+#| label: fig-cor-sftem
+#| fig-cap: score NOSE & FACE-Q
+zz <- sftem |>
+  dplyr::select(2:3,13,14)
+zzc <- cor(zz, use  = "pairwise.complete.obs")
+corrplot(
+  zzc,
+  type = "lower",
+  method = "number",
+  diag = FALSE,
+  tl.cex = 1,
+  # number.cex =3,
+  title = ""
+)
+```
+Le score `physique` du SF36 est très mal corrélé avec les scores du FACE-Q
+nasal. Les corrélations du score `mental` du SF36 vont de mauvaises à médiocres.
+La moins mauvaise est la corrélation avec le score `Qualité de vie` du FACE-Q
+nasal ce qui est plutôt rassurant.
+
+#### Analyse factorielle
+
+```{r}
+#| label: prepa_facto-sftem
+rtt <- PCA(as.data.frame(zz), graph = FALSE)
+```
+```{r}
+#| label: fig-factoval-sftem
+#| fig-cap: Analyse factorielle - Échelles du FACE-Q nasal
+rtt |>
+  fviz_pca_var(retel = TRUE,
+               labelsize = 3,
+               col.var = "contrib",
+               title = "SF36 & Échelles du FACE-Q nasal (témoins)",
+               subtitle = "Analyse factorielle",
+               select.var = list(contrib = 8))
+```
+
+### Patients et témoins
+
+#### Corrélations 2 à 2
+
+```{r}
+#| label: fig-cor-nose-pt
+#| fig-cap: score NOSE & FACE-Q
+zz <- sftot |>
+  dplyr::select(2:3,14,15)
+zzc <- cor(zz, use  = "pairwise.complete.obs")
+corrplot(
+  zzc,
+  type = "lower",
+  method = "number",
+  diag = FALSE,
+  tl.cex = 1,
+  # number.cex =3,
+  title = ""
+)
+```
+
+Le score `physique` du SF36 est très mal corrélé avec les scores du FACE-Q
+nasal. Les corrélations du score `mental` du SF36 vont de mauvaises à médiocres.
+La moins mauvaise est la corrélation avec le score `Qualité de vie` du FACE-Q
+nasal ce qui est plutôt rassurant.
+
+#### Analyse factorielle
+
+```{r}
+#| label: prepa_facto-ssfpt
+
+zz <- as.data.frame(zz)
+zz$groupe = c(rep("Patient",nrow(sfpat)),rep("Témoin",nrow(sftem)))
+rtt <- PCA(as.data.frame(zz), graph = FALSE, quali.sup = "groupe")
+```
+
+```{r}
+#| label: fig-factoval-sfpt
+#| fig-cap: Analyse factorielle - Échelles du FACE-Q nasal
+rtt |>
+  fviz_pca_var(retel = TRUE,
+               labelsize = 3,
+               col.var = "contrib",
+               title = "SF36 & Échelles du FACE-Q nasal (patients +témoins)",
+                              subtitle = "Analyse factorielle",
+               select.var = list(contrib = 8))
+```
+
+:::

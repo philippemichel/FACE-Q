@@ -23,42 +23,33 @@ fam <- function(x) {
   demog <- read_ods("datas/nasal.ods", sheet = 1, na = nn) |>
     clean_names() |>
     mutate(across(is.character, as.factor)) |>
-    mutate(across(starts_with("date"), ~ mdy(.x)))
+    mutate(across(starts_with("date"), ~ mdy(.x))) |>
+    mutate(frontal = ifelse(nature_ntervention %in%
+      c("Lambeau de schmid-Meyer", "Lambeau frontal"),
+    "yes", "no"
+    ))
   bb <- read_ods("datas/nasal.ods", sheet = 2, na = nn)
-  var_label(demog) <- bb$nom
+  var_label(demog) <- c(bb$nom, "lambeau frontal")
 
-
-  #
   # Exclusions des témoins k+
   #
   ww <- which(demog$groupe == "Témoin" & !is.na(demog$histo))
   demog <- demog |>
     filter(!id %in% demog$id[ww])
   #
-  tt <- demog |>
-    dplyr::select(id, age, sexe)
-  #
   # Patients
   #
+  demogt <- demog |>
+    dplyr::filter(groupe == "Patient") |>
+    dplyr::select(id, age, sexe)
+
   pat <- read_ods("datas/patients.ods", sheet = 1, na = nn) |>
     clean_names() |>
     mutate(across(is.character, as.factor)) |>
-    left_join(tt, by = "id") |>
+    left_join(demogt, by = "id") |>
     relocate(age, sexe, .before = moment)
   bb <- read_ods("datas/patients.ods", sheet = 2, na = nn)
   var_label(pat) <- bb$nom
-  #
-  # témoins
-  #
-  tem <- read_ods("datas/temoins.ods", sheet = 1, na = nn) |>
-    clean_names() |>
-    mutate(across(is.character, as.factor)) |>
-    left_join(tt, by = "id") |>
-    relocate(age, sexe, .before = moment)
-  bb <- read_ods("datas/temoins.ods", sheet = 2, na = nn)
-  var_label(tem) <- bb$nom
-  tem <- tem |>
-    filter(!id %in% demog$id[ww])
   #
   ###########################################################
   #
@@ -67,33 +58,25 @@ fam <- function(x) {
   #
   #                             Témoins
   #
- demogt <- read_ods("datas/nasal.ods", sheet = 1, na = nn) |>
+
+  demogt <- read_ods("datas/nasal.ods", sheet = 1, na = nn) |>
     clean_names() |>
     mutate(across(is.character, as.factor)) |>
-    mutate(across(starts_with("date"), ~ mdy(.x)))
-  bb <- read_ods("datas/nasal.ods", sheet = 2, na = nn)
-  var_label(demogt) <- bb$nom
-
-
-#
-  ww <- which(demogt$groupe != "Témoin" & !is.na(demog$histo))
-  demogt <- demogt |>
-    filter(!id %in% demog$id[ww])
-  #
-  ttem <- demogt |>
+    dplyr::filter(groupe == "Témoin") |>
     dplyr::select(id, age, sexe)
-  tem <- read_ods("datas/temoins.ods", sheet = 2, na = nn) |>
+
+  tem <- read_ods("datas/temoins.ods", sheet = 1, na = nn) |>
     clean_names() |>
     mutate(across(is.character, as.factor)) |>
-    left_join(ttem, by = "id") |>
+    left_join(demogt, by = "id") |>
     relocate(age, sexe, .before = moment)
-  bb <- read_ods("datas/temoins.ods", sheet = 3, na = nn)
+  bb <- read_ods("datas/temoins.ods", sheet = 2, na = nn)
   var_label(tem) <- bb$nom
   #
   ###########################################################
   #
 
-  se(demog, pat, tem, file = "datas/faceq.RData")
+  save(demog, pat, tem, file = "datas/faceq.RData")
 }
 
 

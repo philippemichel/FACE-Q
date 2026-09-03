@@ -19,7 +19,7 @@ title-block-banner-color: white
 format:
   html:
     appendix-style: default
-    embed-resources: false
+    embed-resources: true
     theme:
       light: flatly
       dark: darkly
