@@ -1,35 +1,8 @@
 ---
-subtitle: "Rapport statistique V0.2" 
+subtitle: "Rapport statistique V1.0" 
 cache: false
 ---
-:::{.panel-tabset}
-# Généralités
 
-::: {.callout-important appearance="simple"}
-**Validation francophone du questionnaire FACE-Q pour la
-reconstruction/réhabilitation dans les suites d’un carcinome cutané nasal**
-:::
-
-<hr>
-
-**Investigateur Coordonnateur** : Khaled AL TABAA\
-Service d’ORL — Hôpital NOVO (Site de Pontoise)
-
-**Chef de projet** : Mathilde WLODARCZYK\
-USRC — Hôpital NOVO
-
-**Méthodologiste** : Chrystelle VIDAL\
-GIRCI  Île de France 
-
-**Data-manager** : Nathanaël CHARRIER\
-USRC — Hôpital NOVO
-
-**Statisticien** : Philippe MICHEL\
-USRC — Hôpital NOVO
-
-<hr>
-
-Recherche non interventionnelle ne comportant aucun risque ni contrainte
 
 ```{r}
 #| label: setup
@@ -58,7 +31,7 @@ library("ggstats")
 #
 load("datas/faceq.RData")
 expx <-  FALSE
-classeur <- "faceq_2008v1.ods"
+classeur <- "faceq_1009v2.ods"
 #
 ptest <- list(all_continuous() ~ "wilcox.test", all_categorical() ~ "chisq.test")
 stt <- list(
@@ -179,6 +152,7 @@ zz <- scorepat |>
 scorept <- rbind(zz,scoretem) |>
   dplyr::select(!id)
 ```
+
 ```{r}
 #| label: macros
 tabx <- function(zz){
@@ -189,7 +163,7 @@ zz |>
   add_overall(col_label = "**Total**  \nN = {style_number(N)}") |>
      modify_header(label ~ " ")
 }
-# Digrammes de Bland-Altmann
+# Diagrammes de Bland-Altmann
 blandph <- function(i){
 nnp <- names(scorepat)[i]
 patg <- scorepat |>
@@ -264,6 +238,7 @@ vis_dat(demog[,c(4:16,18:28,39,40,44:51)],
     axis.text.x = element_text(angle = 70, vjust =0, hjust=0)
   )
 ```
+
 ```{r}
 #| label: fig-manq_pat
 #| fig-cap: Données manquantes - Patients
@@ -312,6 +287,7 @@ demog |>
      modify_header(label ~ " ") |>
   pexptabph(exp = expx, nomfich = classeur , nomsheet = "demog1", lg = TRUE)
 ```
+
 ```{r}
 #| label: fig-pyr
 #| fig-cap: Pyramide des âge (patients & témoins)
@@ -374,9 +350,7 @@ write_ods(path = classeur, sheet = "tumeur", append = TRUE)
 #| tbl-cap: Intervention chirurgicale
 zz <- demog |>
   dplyr::filter(groupe == "Patient") |>
-  mutate(frontal = ifelse(nature_ntervention %in% 
-                            c("Lambeau de schmid-Meyer" ,"Lambeau frontal"),
-                          "yes", "no")) |>
+
   dplyr::select(exerese_chirurgicale_transfixiante:nature_ntervention,nb_tps_op) |>
   tbl_summary(missing = "no",
               statistic = stt,
@@ -398,6 +372,8 @@ write_ods(path = classeur, sheet = "chir", append = TRUE)
 # Objectif principal
 
 ## Acceptabilité
+
+Un questionnaire contenant au moins un item non rempli est considéré comme incomplet. Le taux de remplissage est excellent.
 
 ```{r}
 #| label: tbl-accept
@@ -452,7 +428,7 @@ add_p(test = list(
 everything() ~ "paired.wilcox.test"),
 group = id) |>
 bold_p(t = 0.05) |>
-gexptabph(exp = expx, nomfich = classeur , nomsheet = "scorespat")
+gexptabph(exp = expx, nomfich = classeur , nomsheet = "echellespat")
 ```
 
 ```{r}
@@ -482,6 +458,7 @@ patn |>
   ) +
    guides(fill = guide_legend(nrow = 2))
 ```
+
 ```{r}
 #| label: tbl-scores-pat
 #| tbl-cap: "Patients : J0 vs J7 (scores)"
@@ -533,21 +510,27 @@ zz <-   figp(zz,1.1,0.9,110, 0.15, h=9)
  zz <-  figp(zz,2.1,1.9,110, 0.15, h=9)
  figp(zz,3.1,2.9,105, 0.95, h=9)
 ```
+
 Les items d'effets secondaires sont à 1 pour l'absence d'EI & à 5 pour le EI les
 plus gênants. Ils évoluent donc à l'inverse des items.
 
 ## Différences J7-J0
+
+
+Les graphiques de Bland-Altmann permettent de visualiser les différences entre les mesures à J0 & J7. Les résutats sont homogènes,, non infulencés par la réponse à J0 (par ex les patients mécontents du résultats à J0 n'ont pas plus modifié leur réponse à J7 que les autres).
 
 ```{r}
 #| label: fig-bland1
 #| fig-cap: "Apparence"
 blandph(3)
 ```
+
 ```{r}
 #| label: fig-bland2
 #| fig-cap: "Qualité de vie"
 blandph(4)
 ```
+
 ```{r}
 #| label: fig-bland3
 #| fig-cap: "Effets secondaires"
@@ -578,10 +561,10 @@ write_ods(path = classeur, sheet = "echelle-tem", append = TRUE)
 ```
 
 ```{r}
-#| label: fig-echelle-tem
-#| fig-cap: "Patients vs témoins (échelles)"
+#| label: tbl-echelle-tem2
+#| tbl-cap: "Patients vs témoins (échelles)"
 #| eval: false
-z <- scoretem |>
+zz <- scoretem |>
 dplyr::select(!id) |>
 tbl_summary(by = jj,
 include = !age) |>
@@ -619,11 +602,13 @@ as_tibble() |>
 write_ods(path = classeur, sheet = "scores-tem", append = TRUE)
 }
 ```
+
 ```{r}
 #| label: fig-scores-tem
 #| fig-cap: "Patients vs témoins (scores)"
 #| fig-asp: 1.5
-zz <- scorept |>
+
+scorept |>
   pivot_longer(cols = 2:3) |>
   ggplot() +
   aes(x = name, y = value, fill = jj) +
@@ -646,8 +631,6 @@ zz <- scorept |>
     legend.title = element_blank(),
     legend.position = "bottom"
   )
-zz <- figp(zz,1.1,0.9,110, 0.001,h =12)
-  figp(zz,2.1,1.9,110, 0.3, h=12)
 ```
 
 Les témoins sont moins satisfaits de leur nez ou visage que les patients !
@@ -716,8 +699,63 @@ avec les autres.
 
 ### Lambeau frontal
 
-On vérifie sui le fait d'aoir eu un labeau frontal modifie la réponse à la
-question sur les effets indésirables frontaux.
+On vérifie si le fait d'avoir eu un lambeau frontal modifie la réponse à la
+question sur les effets indésirables frontaux. Les patients opérés du front sont
+moins satisfaits du résultat que les autres patients. De manière logique, les p
+patients n'ayant pas eu de geste sur le front n'ont pas d'effets indésirables.
+
+```{r}
+#| label: tbl-front
+#| tbl-cap: Lambeau frontal
+
+
+zz <- left_join(patn0,demog[,c("id","frontal")], by = "id") |> 
+dplyr::select(frontal, "SATISFACTION CONCERNANT L'APPARENCE GÉNÉRALE DU VISAGE":"EFFETS INDESIRABLES : FRONT, SOURCILS, ET CUIR CHEVELU" ) |> 
+  tbl_summary(by = frontal,
+              missing = "no",
+              statistic = stt) |> 
+  add_p() |>
+bold_p(t = 0.05) |>
+modify_header(label ~ " ")
+
+zz |>
+as_kable_extra(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+kable_styling(latex_options = c("scale_down", "repeat_header")) 
+
+if(expx){
+zz |>
+    as_tibble() |>
+write_ods(path = classeur, sheet = "frontal", append = TRUE)
+}
+```
+
+Le calcul des corrélations pour les patients ayant eu un lambeau frontal est
+peu fiable car le nombre de patients est faible (n=12). Avec cette réserve, les
+effets indésirables frontaux semblent bien corrélés avec la qualité de vie dans ce sous-groupe.  
+
+Par ailleurs, toujours dans ce sous-groupe, les corrélations entre les échelles
+du FACE-Q semblent être meilleures. Plus les patients sont graves meilleure est
+la qualité du score ?
+
+```{r}
+#| label: fig-cor2a2_frontal
+#| fig-cap: Corrélations 2 à 2 lambeau frontal +)
+#| fig-asp: 1.5
+zz <- patn |>
+  left_join(demog[,c("id","frontal")], by = "id") |>
+  dplyr::filter(jj == "J0") |>
+  dplyr::filter(frontal == "yes") |>
+  dplyr::select(!c(id,jj,age, frontal))
+zzc <- cor(zz)
+corrplot(zzc,
+         type = "lower",
+         method = "number",
+         diag= FALSE,
+         tl.cex= 0.5,
+        # number.cex =3,
+         title = "")
+```
+
 
 
 
@@ -729,6 +767,7 @@ zz <- patn0 |>
   dplyr::select(!c(id, jj))
 rtt <- PCA(as.data.frame(zz), graph = FALSE)
 ```
+
 ```{r}
 #| label: fig-factoval-pat
 #| fig-cap: Analyse factorielle - Échelles du FACE-Q nasal
@@ -765,7 +804,8 @@ tabcc <- NULL
 # Apparence
 ec2 <- round(sd(scorept$Apparence)/2,1)
 cc <- cohens_d(scorept,Apparence~jj, ci = TRUE, 
-               hedges.correction = TRUE)
+               hedges.correction = TRUE,
+               boot.parallel = getOption("boot.parallel", "multicore"))
 ccapp <- bicph(cc$effsize,cc$conf.low,cc$conf.high)
 ll <- c("Apparence",ccapp,ec2)
 tabcc <- rbind(tabcc,ll)
@@ -791,7 +831,7 @@ write_ods(path = classeur, sheet = "dcim", append = TRUE)
 
 Il faudrait donc environ 6 points (sur 100) d'écart entre deux populations sur
 le score `Apparence` & 9 /100 pour le score `qualité de vie` pour dire que cette
-différence a un sens clinique.
+différence a un sens clinique. Le score de Cohens montrerait que la différence entre les patients & les témoins est très importante pour le score `Apparence` & modérée pour le score `Qualité de vie`.
 
 # Objectifs secondaires
 
@@ -895,7 +935,7 @@ sftot <- sfpat |>
   bind_rows(sftem)
 ```
 
-### Patients
+On étudie que les patients à J0.
 
 #### Corrélations 2 à 2
 
@@ -942,95 +982,3 @@ rtt |>
                select.var = list(contrib = 8))
 ```
 
-### Témoins
-
-#### Corrélations 2 à 2
-
-```{r}
-#| label: fig-cor-sftem
-#| fig-cap: score NOSE & FACE-Q
-zz <- sftem |>
-  dplyr::select(2:3,13,14)
-zzc <- cor(zz, use  = "pairwise.complete.obs")
-corrplot(
-  zzc,
-  type = "lower",
-  method = "number",
-  diag = FALSE,
-  tl.cex = 1,
-  # number.cex =3,
-  title = ""
-)
-```
-Le score `physique` du SF36 est très mal corrélé avec les scores du FACE-Q
-nasal. Les corrélations du score `mental` du SF36 vont de mauvaises à médiocres.
-La moins mauvaise est la corrélation avec le score `Qualité de vie` du FACE-Q
-nasal ce qui est plutôt rassurant.
-
-#### Analyse factorielle
-
-```{r}
-#| label: prepa_facto-sftem
-rtt <- PCA(as.data.frame(zz), graph = FALSE)
-```
-```{r}
-#| label: fig-factoval-sftem
-#| fig-cap: Analyse factorielle - Échelles du FACE-Q nasal
-rtt |>
-  fviz_pca_var(retel = TRUE,
-               labelsize = 3,
-               col.var = "contrib",
-               title = "SF36 & Échelles du FACE-Q nasal (témoins)",
-               subtitle = "Analyse factorielle",
-               select.var = list(contrib = 8))
-```
-
-### Patients et témoins
-
-#### Corrélations 2 à 2
-
-```{r}
-#| label: fig-cor-nose-pt
-#| fig-cap: score NOSE & FACE-Q
-zz <- sftot |>
-  dplyr::select(2:3,14,15)
-zzc <- cor(zz, use  = "pairwise.complete.obs")
-corrplot(
-  zzc,
-  type = "lower",
-  method = "number",
-  diag = FALSE,
-  tl.cex = 1,
-  # number.cex =3,
-  title = ""
-)
-```
-
-Le score `physique` du SF36 est très mal corrélé avec les scores du FACE-Q
-nasal. Les corrélations du score `mental` du SF36 vont de mauvaises à médiocres.
-La moins mauvaise est la corrélation avec le score `Qualité de vie` du FACE-Q
-nasal ce qui est plutôt rassurant.
-
-#### Analyse factorielle
-
-```{r}
-#| label: prepa_facto-ssfpt
-
-zz <- as.data.frame(zz)
-zz$groupe = c(rep("Patient",nrow(sfpat)),rep("Témoin",nrow(sftem)))
-rtt <- PCA(as.data.frame(zz), graph = FALSE, quali.sup = "groupe")
-```
-
-```{r}
-#| label: fig-factoval-sfpt
-#| fig-cap: Analyse factorielle - Échelles du FACE-Q nasal
-rtt |>
-  fviz_pca_var(retel = TRUE,
-               labelsize = 3,
-               col.var = "contrib",
-               title = "SF36 & Échelles du FACE-Q nasal (patients +témoins)",
-                              subtitle = "Analyse factorielle",
-               select.var = list(contrib = 8))
-```
-
-:::

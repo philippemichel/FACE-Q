@@ -24,10 +24,10 @@ fam <- function(x) {
     clean_names() |>
     mutate(across(is.character, as.factor)) |>
     mutate(across(starts_with("date"), ~ mdy(.x))) |>
-    mutate(frontal = ifelse(nature_ntervention %in%
+    mutate(frontal = as.factor(ifelse(nature_ntervention %in%
       c("Lambeau de schmid-Meyer", "Lambeau frontal"),
     "yes", "no"
-    ))
+    )))
   bb <- read_ods("datas/nasal.ods", sheet = 2, na = nn)
   var_label(demog) <- c(bb$nom, "lambeau frontal")
 
